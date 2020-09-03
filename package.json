@@ -1,0 +1,36 @@
+{
+  "name": "AruChat",
+  "version": "0.0.52",
+  "description": "Keep an ear on a Twitch stream chat !",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder -mwl --x64"
+  },
+  "build": {
+    "appId": "fr.pergens.aruchat",
+    "mac": {
+      "category": "Network"
+    },
+    "linux": {
+      "category": "Utility"
+    }
+  },
+  "repository": "https://github.com/arubinu",
+  "keywords": [
+    "speech",
+    "bot",
+    "chat",
+    "twitch",
+    "stream",
+    "live"
+  ],
+  "author": "Alvin Pergens",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "^10.1.0"
+  },
+  "dependencies": {
+    "electron-config": "^2.0.0"
+  }
+}

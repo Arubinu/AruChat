@@ -1,0 +1,419 @@
+{
+	"en-US": [ "English", {
+		"scroll_top":			"Top",
+		"page_up":				"Page -",
+		"page_down":			"Page +",
+		"scroll_bottom":		"Bottom",
+		"lateral":				"Settings",
+		"sentences": {
+			"variables":		"variables",
+			"chat":				[ "Chat",						"$username$ said: $message$" ],
+			"reward":			[ "Reward",						"$username$ redeem: $reward$" ],
+			"follow":			[ "Follow",						"$usernames$ just followed" ],
+			"cheer":			[ "Cheer",						"$username$ send $bits$ bits" ],
+			"cheer_msg":		[ "Cheer (w/ message)",			"$username$ send $bits$ bits and said: $message$" ],
+			"sub":				[ "Subscribe",					"$username$ just subscribed" ],
+			"sub_msg":			[ "Subscribe (w/ message)",		"$username$ just subscribed and said: $message$" ],
+			"resub":			[ "Resubscribe",				"$username$ resubscribe" ],
+			"resub_msg":		[ "Resubscribe (w/ message)",	"$username$ resubscribe and said: $message$" ],
+			"gift":				[ "Gift Subscription",			"$gifter$ subgift: $recipient$" ],
+			"gift_myst":		[ "Mystery Gift Subscription",	"$gifter$ mystery subgift: $subs$" ],
+			"gift_renew":		[ "Renewed Gift Subscription",	"$gifter$ renewed subgift: $recipient$" ],
+			"hosted":			[ "Host",						"$username$ host with $viewers$ viewers" ],
+			"raid":				[ "Raid",						"$username$ raid with $viewers$ viewers" ]
+		},
+		"connection": {
+			"title":			"Connection",
+			"channel":			"Channel",
+			"connect":			"Connect",
+			"disconnect":		"Disconnect",
+			"more": {
+				"title":		"Activate rewards and more"
+			}
+		},
+		"users": {
+			"title":			"Users",
+			"normal":			"Normal users",
+			"broadcaster":		"Broadcaster",
+			"moderators":		"Moderators",
+			"subscibers":		"Subscibers",
+			"excluded": {
+				"title":		"Excluded",
+				"help":			"Manage users to be excluded",
+				"delete":		"Click to delete"
+			}
+		},
+		"voice": {
+			"title":			"Settings",
+			"voice": {
+				"title":		"Voice",
+				"button":		"Select a voice"
+			},
+			"rate":				"Rate",
+			"pitch":			"Pitch",
+			"volume": {
+				"title":		"Volume",
+				"change":		"%d%"
+			},
+			"sentences": {
+				"title":		"Sentences",
+				"help":			"Manages spoken sentences, as well as chat"
+			},
+			"words": {
+				"title":		"Replace Words",
+				"help":			"Replaces words with others vocally"
+			},
+			"links": {
+				"title":		"Links",
+				"help":			"Say links"
+			},
+			"emotes": {
+				"title":		"Emotes",
+				"help":			"Say emotes"
+			},
+			"ascii": {
+				"title":		"ASCII only",
+				"help":			"Say only ASCII characters (and extended ASCII)"
+			},
+			"limit": {
+				"usernames": {
+					"title":	"Limit Name",
+					"help":		"Limits the diction of usernames (0 to disable)",
+					"change":	"%d character(s)"
+				},
+				"messages": {
+					"title":	"Limit Messages",
+					"help":		"Limits the diction of messages (0 to disable)",
+					"change":	"%d character(s)"
+				}
+			},
+			"repeat": {
+				"title":		"Repetition Name",
+				"help":			"Ignore the diction of username a number of times (0 to disable)",
+				"change":		"%d times"
+			},
+			"flooding": {
+				"title":		"Flooding",
+				"help":			"Detect and ignore flooding",
+				"change":		"%d%"
+			}
+		},
+		"chat": {
+			"title":			"Chat",
+			"timestamp": {
+				"title":		"Timestamp",
+				"help":			"Displays the time in front of each message"
+			},
+			"autoscroll": {
+				"title":		"Automatic Scroll",
+				"help":			"Automatically scroll to the last message"
+			},
+			"reward":			"Reward $username$ [$cost$]",
+			"join":				"Join $username$",
+			"part":				"Part $username$",
+			"host":				"Host $username$ [$viewers$]",
+			"raid":				"Raid $username$ [$viewers$]",
+			"cheer":			"Cheer $username$ [$bits$]",
+			"substribe":		"Subscribe $username$",
+			"resubstribe":		"Resubscribe $username$",
+			"gift":				"SubGift $gifter$ : $recipient$",
+			"gift_myst":		"Mystery SubGift $gifter$ : $subs$ subs",
+			"gift_renew":		"Resubstribe $gifter$ : $recipient$",
+			"connected":		"Connected to the $channel_name$ channel",
+			"reconnection":		"Reconnection in progress ...",
+			"disconnected":		"Disconnected from the $channel$ channel"
+		},
+		"iofile": {
+			"title":			"Import-Export",
+			"importer": {
+				"title":		"Import configuration",
+				"help":			"",
+				"button":		"Import"
+			},
+			"exporter": {
+				"title":		"Export configuration",
+				"help":			"",
+				"button":		"Export"
+			}
+		},
+		"manage": {
+			"normal":			"Manage",
+			"variable":			"Manage (%s)"
+		},
+		"modals": {
+			"token": {
+				"title":		"Rewards Token",
+				"placeholder":	"Twitch Token",
+				"help":			"Channel point rewards require authorization",
+				"tuto":			"Steps to follow",
+				"step1": {
+					"title":	"Retrieving the Client ID",
+					"1":		"Go to this address",
+					"2":		"Fill in the following fields",
+					"2-2":		"like this",
+					"2-3":		"replace Arubinu42 with the name of your channel",
+					"3":		"Click on the button to validate",
+					"4":		"Click on the 'Manage' button and copy the Client ID"
+				},
+				"step2": {
+					"title":	"Retrieving the Token",
+					"1":		"Go to this address",
+					"2":		"Enter your Client ID in the first field",
+					"3":		"Specify the following scopes in the second field",
+					"4":		"Click on the button to validate",
+					"5":		"Enter the Token generated in the field above"
+				}
+			},
+			"excluded": {
+				"input":		"Enter the username to be excluded (click on it to remove it)"
+			},
+			"sentences": {
+				"reset": {
+					"title":	"Reset all these settings",
+					"button":	"Reset"
+				}
+			},
+			"words": {
+				"input":		"Add an item to replace",
+				"placeholder":	"Enter the replacement element here ...",
+				"user":			"Username",
+				"message":		"Message"
+			}
+		},
+		"toasts": {
+			"connection": {
+				"title":		"Connection",
+				"body":			"Enter a Twitch channel, then click 'Connect' to get started."
+			}
+		},
+		"errors": {
+			"twitch": {
+				"title":		"Twitch Error",
+				"auth":			"Please check the name of the channel and/or its token !"
+			},
+			"importer":			"Non-compliant file !"
+		},
+		"test": {
+			"button":			"Test TextToSpeech",
+			"speech":			"Small test of Text To Speech :)"
+		},
+		"loading":				"Click to continue ...",
+		"viewers":				"Viewers",
+		"followers":			"Followers",
+		"languages":			"Languages",
+		"changelog":			"Changelog",
+		"close":				"Close",
+		"confirm":				"Confirm",
+		"unsupported":			"Your browser does not support TextToSpeech !"
+	} ],
+	"fr-FR": [ "Français", {
+		"scroll_top":			"Haut",
+		"page_up":				"Page -",
+		"page_down":			"Page +",
+		"scroll_bottom":		"Bas",
+		"lateral":				"Réglages",
+		"sentences": {
+			"variables":		"variables",
+			"chat":				[ "Tchat",						"$username$ dit: $message$" ],
+			"reward":			[ "Récompense",					"$username$ prend la récompense: $reward$" ],
+			"follow":			[ "Suivi",						"$usernames$ suit maintenant la chaîne" ],
+			"cheer":			[ "Bits",						"$username$ envoi $bits$ bits" ],
+			"cheer_msg":		[ "Bits (w/ message)",			"$username$ envoi $bits$ bits et dit: $message$" ],
+			"sub":				[ "Abonnement",					"$username$ vient de s'abonner" ],
+			"sub_msg":			[ "Abonnement (w/ message)",	"$username$ vient de s'abonner et dit: $message$" ],
+			"resub":			[ "Réabonnement",				"$username$ se réabonne" ],
+			"resub_msg":		[ "Réabonnement (w/ message)",	"$username$ se réabonne et dit: $message$" ],
+			"gift":				[ "Cadeau",						"$gifter$ offre un abonnement: $recipient$" ],
+			"gift_myst":		[ "Abonnement Mystère",			"$gifter$ offre des abonnements mystère: $subs$" ],
+			"gift_renew":		[ "Réabonnement Offert",		"$gifter$ renouvelle un abonnement: $recipient$" ],
+			"hosted":			[ "Hébergement",				"$username$ héberge la chaîne avec $viewers$ personnes" ],
+			"raid":				[ "Raid",						"$username$ raid la chaîne avec $viewers$ personnes" ]
+		},
+		"connection": {
+			"title":			"Connexion",
+			"channel":			"Chaine",
+			"connect":			"Connecter",
+			"disconnect":		"Déconnecter",
+			"more": {
+				"title":		"Activez les récompenses et plus"
+			}
+		},
+		"users": {
+			"title":			"Utilisateurs",
+			"normal":			"Utilisateurs Normal",
+			"broadcaster":		"Diffuseur",
+			"moderators":		"Moderateurs",
+			"subscibers":		"Abonnés",
+			"excluded": {
+				"title":		"Exclus",
+				"help":			"Gérer les utilisateurs à exclure",
+				"delete":		"Cliquez pour supprimer"
+			}
+		},
+		"voice": {
+			"title":			"Réglages",
+			"voice": {
+				"title":		"Voix",
+				"button":		"Choix d'une voix"
+			},
+			"rate":				"Vitesse",
+			"pitch":			"Hauteur",
+			"volume": {
+				"title":		"Volume",
+				"change":		"%d%"
+			},
+			"sentences": {
+				"title":		"Phrases",
+				"help":			"Gère les phrases prononcées, ainsi que le tchat"
+			},
+			"words": {
+				"title":		"Mots Remplacés",
+				"help":			"Remplace des mots par d'autres vocalement"
+			},
+			"links": {
+				"title":		"Liens",
+				"help":			"Prononce les liens"
+			},
+			"emotes": {
+				"title":		"Émotes",
+				"help":			"Prononce les émotes"
+			},
+			"ascii": {
+				"title":		"ASCII uniquement",
+				"help":			"Prononce uniquement les caractères ASCII (et ASCII étendu)"
+			},
+			"limit": {
+				"usernames": {
+					"title":	"Limite du Nom",
+					"help":		"Limite la diction des noms d'utilisateur (0 pour désactiver)",
+					"change":	"%d caractère(s)"
+				},
+				"messages": {
+					"title":	"Limite du Messages",
+					"help":		"Limite la diction des messages (0 pour désactiver)",
+					"change":	"%d caractère(s)"
+				}
+			},
+			"repeat": {
+				"title":		"Répétition du Nom",
+				"help":			"Ignore la prononciation du nom d'utilisateur un certain nombre de fois (0 pour désactiver)",
+				"change":		"%d fois"
+			},
+			"flooding": {
+				"title":		"Répétitions",
+				"help":			"Détecter et ignorer les répétitions",
+				"change":		"%d%"
+			}
+		},
+		"chat": {
+			"title":			"Chat",
+			"timestamp": {
+				"title":		"Horodatage",
+				"help":			"Affiche l'heure devant chaque message"
+			},
+			"autoscroll": {
+				"title":		"Défilement Auto",
+				"help":			"Faire défiler automatiquement jusqu'au dernier message"
+			},
+			"host":				"Host $username$ [$viewers$]",
+			"raid":				"Raid $username$ [$viewers$]",
+			"cheer":			"Bits $username$ [$bits$]",
+			"reward":			"Récompense $username$ [$cost$]",
+			"join":				"Rejoint $username$",
+			"part":				"Part $username$",
+			"host":				"Hébergement $username$ [$viewers$]",
+			"raid":				"Raid $username$ [$viewers$]",
+			"cheer":			"Acclame $username$ [$bits$]",
+			"substribe":		"Abonnement $username$",
+			"resubstribe":		"Réabonnement $username$",
+			"gift":				"Abonnement Offert $gifter$ : $recipient$",
+			"gift_myst":		"Abonnement Mystère $gifter$ : $subs$ subs",
+			"gift_renew":		"Réabonnement Offert $gifter$ : $recipient$",
+			"connected":		"Connecté à la chaîne $channel_name$",
+			"reconnection":		"Reconnexion en cours ...",
+			"disconnected":		"Déconnecté de la chaîne $channel$"
+		},
+		"iofile": {
+			"title":			"Importer-Exporter",
+			"importer": {
+				"title":		"Importer la configuration",
+				"help":			"",
+				"button":		"Importer"
+			},
+			"exporter": {
+				"title":		"Exporter la configuration",
+				"help":			"",
+				"button":		"Exporter"
+			}
+		},
+		"manage": {
+			"normal":			"Gérer",
+			"variable":			"Gérer (%s)"
+		},
+		"modals": {
+			"token": {
+				"title":		"Jeton des Récompenses",
+				"placeholder":	"Jeton Twitch",
+				"help":			"Les récompenses de points de chaîne nécéssitent des autorisations",
+				"tuto":			"Étapes à suivre",
+				"step1": {
+					"title":	"Récupérer de l'Identifiant Client",
+					"1":		"Aller à cette adresse",
+					"2":		"Remplissez les champs suivants",
+					"2-2":		"comme ceci",
+					"2-3":		"remplacez Arubinu42 par le nom de votre chaîne",
+					"3":		"Cliquez sur le bouton pour valider",
+					"4":		"Cliquez sur le bouton 'Gérer' et copiez l'Identifiant Client"
+				},
+				"step2": {
+					"title":	"Retrieving the Token",
+					"1":		"Aller à cette adresse",
+					"2":		"Entrez votre Identifiant Client dans le premier champ",
+					"3":		"Spécifiez les scopes suivants dans le deuxième champ",
+					"4":		"Cliquez sur le bouton pour valider",
+					"5":		"Entrez le jeton généré dans le champ ci-dessus"
+				}
+			},
+			"excluded": {
+				"input":		"Entrez un utilisateur à exclure (cliquez dessus pour le supprimer)"
+			},
+			"sentences": {
+				"reset": {
+					"title":	"Réinitialisez tous ces paramètres",
+					"button":	"Réinitialisez"
+				}
+			},
+			"words": {
+				"input":		"Ajouter un élément à remplacer",
+				"placeholder":	"Entrez ici l'élément de remplacement ...",
+				"user":			"Nom d'utilisateur",
+				"message":		"Message"
+			}
+		},
+		"toasts": {
+			"connection": {
+				"title":		"Connexion",
+				"body":			"Entrez une chaîne Twitch, puis cliquez sur 'Connecter' pour commencer."
+			}
+		},
+		"errors": {
+			"twitch": {
+				"title":		"Erreur Twitch",
+				"auth":			"Veuillez vérifier le nom de la chaîne et/ou son jeton !"
+			},
+			"importer":			"Fichier non conforme !"
+		},
+		"test": {
+			"button":			"Tester le TextToSpeech",
+			"speech":			"Petit teste de Text To Speech :)"
+		},
+		"loading":				"Cliquez pour continuer ...",
+		"viewers":				"Spectateurs",
+		"followers":			"Followers",
+		"languages":			"Langues",
+		"changelog":			"Changelog",
+		"close":				"Fermer",
+		"confirm":				"Confirmer",
+		"unsupported":			"Votre navigateur ne supporte pas le TextToSpeech !"
+	} ]
+}

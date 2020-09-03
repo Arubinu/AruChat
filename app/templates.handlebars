@@ -1,0 +1,375 @@
+<template id="toast">
+	<div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+		<div class="toast-header">
+			<strong class="mr-auto">{{ title }}</strong>
+			<small>{{ small }}</small>
+			<button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close"></button>
+		</div>
+		<div class="toast-body">
+			{{ body }}
+		</div>
+	</div>
+	<div class="toast infos" role="alert" aria-live="assertive" aria-atomic="true" data-autohide="false">
+		<div class="toast-body">
+			<div class="infos-icon">
+				<img src="images/default.png" />
+			</div>
+			<div class="toast-subbody">
+				<div class="infos-name">{{ name }}</div>
+				<div class="infos-status">{{ status }}</div>
+				<div class="infos-game">{{ game }}</div>
+			</div>
+		</div>
+	</div>
+</template>
+
+<template id="modal">
+	<div class="modal fade" role="dialog" aria-labelledby="modal" aria-hidden="true">
+		<div class="modal-dialog{{ or ( and large ' modal-lg' ) '' }}">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="modal">{{ title }}</h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="{{ close }}"></button>
+				</div>
+				<div class="modal-body">
+					{{# if html }}
+						{{{ html }}}
+					{{ else }}
+						{{ body }}
+					{{/ if }}
+				</div>
+				<div class="modal-footer">
+					{{# if footer.input }}
+						<div class="form-group modal-add-data">
+							<input type="text" class="form-control" value="{{ footer.input.value }}" placeholder="{{ footer.input.placeholder }}" />
+							<i class="fas fa-{{ footer.input.icon }}"></i>
+						</div>
+					{{/ if }}
+
+					{{# if footer.close }}<button type="button" class="btn btn-sm btn-primary" data-dismiss="modal">{{ close }}</button>{{/ if }}
+					{{# if ( eq ( type footer.confirm ) 'function' ) }}<button type="button" class="btn btn-sm btn-success confirm">{{ confirm }}</button>{{/ if }}
+				</div>
+			</div>
+		</div>
+	</div>
+</template>
+
+<template id="message">
+	<li timestamp="{{ data.timestamp }}" class="{{ data.class }}">
+		<span class="time">{{ data.time }}</span>
+		{{# if ( and data.message ( and data.flags data.extra ) ) }}
+			{{# each data.accept }}
+				{{# if ( in this ( keys ../data.flags ) ) }}
+					{{# if ( array-get this ../data.flags ) }}
+		<img src="./images/icons/{{ this }}.png" class="flag" title="{{ capitalize this }}" />
+					{{/ if }}
+				{{/ if }}
+			{{/ each }}
+			<a href="https://www.twitch.tv/{{ lower data.user }}" target="_blank" class="username" style="color: {{ data.color }};">{{ data.user }}</a>
+			:
+		{{/ if }}
+		<span class="message{{ or ( and data.special ' special' ) '' }}">{{{ data.message }}}</span>
+	</li>
+</template>
+
+<template id="channels">
+	<h6>{{ token.title }}</h6>
+	<div class="form-group">
+		<input type="text" value="{{ token.value }}" placeholder="{{ token.placeholder }}" class="form-control" />
+		<small class="form-text text-muted">{{ token.small }}</small>
+	</div>
+	<h6>{{ tuto.title }}</h6>
+	<div style="position: relative;">
+		<div class="page-container step1">
+			<div style="margin-bottom: 5px;">
+				&nbsp;&nbsp;1 - {{ array-get 1 tuto.step1.values }}: <a href="https://dev.twitch.tv/console/apps/create" target="_blank">https://dev.twitch.tv/console/apps/create</a>
+				<br />&nbsp;&nbsp;2 - {{ array-get 2 tuto.step1.values }}: <a href="#" class="token-image" title="{{ tuto.title }}">{{ array-get 22 tuto.step1.values }}</a> <i style="font-size: 12px;">{{ array-get 23 tuto.step1.values }}</i>
+				<br />&nbsp;&nbsp;3 - {{ array-get 3 tuto.step1.values }}
+				<br />&nbsp;&nbsp;4 - {{ array-get 4 tuto.step1.values }}
+			</div>
+		</div>
+		<div class="page-container step2" style="display: none;">
+			<div style="margin-bottom: 5px;">
+				&nbsp;&nbsp;1 - {{ array-get 1 tuto.step2.values }}: <a href="https://twitchapps.com/tokengen" target="_blank">https://twitchapps.com/tokengen</a>
+				<br />&nbsp;&nbsp;2 - {{ array-get 2 tuto.step2.values }}
+				<br />&nbsp;&nbsp;3 - {{ array-get 3 tuto.step2.values }}:
+				<br />&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="badge badge-pill badge-primary" style="font-size: 14px;">channel:read:redemptions user:read:email chat:read</span>
+				<br />&nbsp;&nbsp;4 - {{ array-get 4 tuto.step2.values }}
+				<br />&nbsp;&nbsp;5 - {{ array-get 5 tuto.step2.values }}
+			</div>
+		</div>
+		<ul class="pagination pagination-sm justify-content-center" style="position: absolute; top: -34px; right: 0px;">
+			<li class="page-item active">
+				<button class="page-link" style="font-size: 12px;" data-tuto="1">1 - {{ tuto.step1.button }}</button>
+			</li>
+			<li class="page-item">
+				<button class="page-link" style="font-size: 12px;" data-tuto="2">2 - {{ tuto.step2.button }}</button>
+			</li>
+		</ul>
+	</div>
+</template>
+
+<template id="sentences">
+	<div>
+		<ul class="nav nav-tabs">
+			{{# each data }}
+			<li class="nav-item nav-item-sm">
+				<a href="#sentences_{{ key }}" class="nav-link{{ or ( and @first ' active' ) '' }}">{{ name }}</a>
+			</li>
+			{{/ each }}
+		</ul>
+
+		<div class="tab-content">
+			{{# each data }}
+			<div id="sentences_{{ key }}" class="tab-pane fade{{ or ( and @first ' show active' ) '' }}">
+				{{# each list }}
+				<div class="form-group">
+					<input type="text" value="{{ input.value }}" placeholder="{{ input.placeholder }}" class="form-control left-input" />
+					<i class="chat fas fa-comment-dots"></i>
+					<i class="speech fas fa-volume-up"></i>
+					<small class="form-text text-muted">{{{ small }}}</small>
+				</div>
+				{{/ each }}
+			</div>
+			{{/ each }}
+		</div>
+	</div>
+</template>
+
+<template id="words">
+	<table class="table table-transparent">
+		<thead>
+			<tr>
+				<th scope="col">Mot cherché</th>
+				<th scope="col">Mot remplacé</th>
+				<th scope="col" style="width: 102px;"></th>
+			</tr>
+		</thead>
+		<tbody>
+			{{# each data }}
+			<tr class="table-active">
+				<th scope="row">{{ word }}</th>
+				<td><input type="text" value="{{ replace }}" placeholder="{{ ../modals.words.placeholder }}" class="input-transparent" /></td>
+				<td class="text-center" style="user-select: none;">
+					<i class="fas fa-user{{ or ( and ( or ( eq mode 1 ) ( eq mode 3 ) ) ' enabled' ) '' }}" title="{{ ../modals.words.user }}"></i>
+					<i class="fas fa-comment-dots{{ or ( and ( or ( eq mode 2 ) ( eq mode 3 ) ) ' enabled' ) '' }}" title="{{ ../modals.words.message }}"></i>
+					<i class="fas fa-trash-alt"></i>
+				</td>
+			</tr>
+			{{/ each }}
+		</tbody>
+	</table>
+</template>
+
+<template id="navbar">
+	<div class="navbar navbar-expand-lg fixed-top bg-light">
+		<div class="container-fluid">
+			<img src="images/icon.png" class="navbar-brand" />
+			<a href="." class="navbar-brand">{{ site.name }}</a>
+			<div>
+				<ul class="navbar-nav navbar-right">
+					<li title="{{ viewers }}"><span class="viewers">-</span> <i class="fas fa-users"></i></li>
+					<li title="{{ followers }}"><span class="followers">-</span> <i class="fas fa-id-badge"></i></li>
+					<li title="{{ languages }}" class="languages"><i class="fas fa-globe"></i></li>
+					<li title="{{ changelog }}" class="changelog"><i class="fas fa-code-branch"></i></li>
+					<li class="version">{{ site.version }}</li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</template>
+
+<template id="chat">
+	<div id="chat">
+		<div class="pagination lateral">
+			<div class="tip-left" title="{{ scroll_top }}">&laquo;</div>
+			<div class="tip-left" title="{{ page_up }}">&lsaquo;</div>
+			<div class="tip-left" title="{{ page_down }}">&rsaquo;</div>
+			<div class="tip-left" title="{{ scroll_bottom }}">&raquo;</div>
+			<hr />
+			<div class="tip-left reverse" style="margin-left: 10px;" title="{{ lateral }}"><i class="fas fa-cog"></i></div>
+			<div class="tip-left reverse" title="Clear Chat"><i class="fas fa-trash-alt"></i></div>
+		</div>
+
+		<ul></ul>
+	</div>
+</template>
+
+<template id="settings">
+	<div id="settings" class="text-center">
+		<ul class="menu">
+			<li data-menu=".connection" title="{{ connection.title }}"><i class="fas fa-house-user"></i></li>
+			<li data-menu=".users" title="{{ users.title }}"><i class="fas fa-users"></i></li>
+			<li data-menu=".voice" title="{{ voice.title }}"><i class="fas fa-assistive-listening-systems"></i></li>
+			<li data-menu=".chat" title="{{ chat.title }}"><i class="fas fa-comments"></i></li>
+			<li data-menu=".iofile" title="{{ iofile.title }}"><i class="fas fa-save"></i></li>
+		</ul>
+		<ul class="connection">
+			<li>
+				<div class="title">{{ connection.channel }}</div>
+				<div class="value">
+					<i class="fas fa-splotch" title="{{ connection.more.title }}"></i>
+					<input name="channel" type="text" class="form-control form-control-sm" />
+				</div>
+			</li>
+			<li class="separator">
+				<button name="connect" type="button" class="btn btn-sm btn-primary">{{ connection.connect }}</button>
+				<button name="disconnect" type="button" class="btn btn-sm btn-primary" disabled>{{ connection.disconnect }}</button>
+			</li>
+		</ul>
+		<ul class="users">
+			<li>
+				<div class="btn-group">
+					<div class="form-check">
+						<label class="form-check-label" title="{{ users.normal }}">
+							<input name="users_normal" class="form-check-input" type="checkbox" checked />
+							<i class="fas fa-male"></i>
+						</label>
+					</div>
+					<div class="form-check">
+						<label class="form-check-label" title="{{ users.broadcaster }}">
+							<input name="users_broadcaster" class="form-check-input" type="checkbox" checked />
+							<i class="fas fa-user-circle"></i>
+						</label>
+					</div>
+					<div class="form-check">
+						<label class="form-check-label" title="{{ users.moderators }}">
+							<input name="users_mod" class="form-check-input" type="checkbox" checked />
+							<i class="fas fa-wrench"></i>
+						</label>
+					</div>
+					<div class="form-check">
+						<label class="form-check-label" title="{{ users.subscibers }}">
+							<input name="users_subscriber" class="form-check-input" type="checkbox" checked />
+							<i class="fas fa-heart"></i>
+						</label>
+					</div>
+				</div>
+			</li>
+			<li>
+				<div class="title">{{ users.excluded.title }}</div>
+				<div class="value"><button name="excluded" type="button" class="btn btn-sm btn-primary" title="{{ users.excluded.help }}">{{ manage.normal }}</button></div>
+			</li>
+		</ul>
+		<ul class="voice">
+			<li>
+				<div class="title">{{ voice.voice.title }}</div>
+				<div class="value">
+					<div name="voice" class="btn-group dropleft" title=" ">
+						<button type="button" class="btn btn-sm btn-primary">{{ voice.voice.button }}</button>
+						<div class="btn-group" role="group">
+							<button id="voice" type="button" class="btn btn-sm btn-primary dropdown-toggle"></button>
+							<div class="dropdown-menu" aria-labelledby="voice"></div>
+						</div>
+					</div>
+				</div>
+			</li>
+			<li>
+				<div class="title">{{ voice.rate }}</div>
+				<div class="value"><input name="rate" type="number" class="form-control form-control-sm" value="1" min=".1" max="10" step=".1" /></div>
+			</li>
+			<li>
+				<div class="title">{{ voice.pitch }}</div>
+				<div class="value"><input name="pitch" type="number" class="form-control form-control-sm" value=".8" min="0" max="2" step=".1" /></div>
+			</li>
+			<li>
+				<div class="title">{{ voice.volume.title }}</div>
+				<div class="value"><i class="fas fa-volume-mute"></i><input name="volume" type="range" class="custom-range" min="0" max="1" step=".01" title=" " /></div>
+			</li>
+			<li>
+				<hr />
+			</li>
+			<li>
+				<div class="title" title="{{ voice.sentences.help }}">{{ voice.sentences.title }}</div>
+				<div class="value"><button name="sentences" type="button" class="btn btn-sm btn-primary" title="{{ voice.sentences.help }}">{{ manage.normal }}</button></div>
+			</li>
+			<li>
+				<div class="title" title="{{ voice.words.help }}">{{ voice.words.title }}</div>
+				<div class="value"><button name="words" type="button" class="btn btn-sm btn-primary" title="{{ voice.words.help }}">{{ manage.normal }}</button></div>
+			</li>
+			<li>
+				<hr />
+			</li>
+			<li>
+				<div class="title" title="{{ voice.links.help }}">{{ voice.links.title }}</div>
+				<div class="value">
+					<div class="custom-control custom-switch">
+						<input name="links" type="checkbox" class="custom-control-input" id="links" checked />
+						<label class="custom-control-label" for="links"></label>
+					</div>
+				</div>
+			</li>
+			<li>
+				<div class="title" title="{{ voice.emotes.help }}">{{ voice.emotes.title }}</div>
+				<div class="value">
+					<div class="custom-control custom-switch">
+						<input name="emotes" type="checkbox" class="custom-control-input" id="emotes" checked />
+						<label class="custom-control-label" for="emotes"></label>
+					</div>
+				</div>
+			</li>
+			<li>
+				<div class="title" title="{{ voice.ascii.help }}">{{ voice.ascii.title }}</div>
+				<div class="value">
+					<div class="custom-control custom-switch">
+						<input name="ascii" type="checkbox" class="custom-control-input" id="ascii" checked />
+						<label class="custom-control-label" for="ascii"></label>
+					</div>
+				</div>
+			</li>
+			<li>
+				<div class="title" title="{{ voice.limit.usernames.help }}">{{ voice.limit.usernames.title }}</div>
+				<div class="value"><input name="lusernames" type="number" class="form-control form-control-sm" value="0" min="0" max="25" step="1" title=" " /></div>
+			</li>
+			<li>
+				<div class="title" title="{{ voice.limit.messages.help }}">{{ voice.limit.messages.title }}</div>
+				<div class="value"><input name="lmessages" type="number" class="form-control form-control-sm" value="0" min="0" max="500" step="1" title=" " /></div>
+			</li>
+			<li>
+				<div class="title" title="{{ voice.repeat.help }}">{{ voice.repeat.title }}</div>
+				<div class="value"><input name="repeat" type="number" class="form-control form-control-sm" value="1000" min="0" max="1000" step="1" title=" " /></div>
+			</li>
+			<li>
+				<div class="title" title="{{ voice.flooding.help }}">{{ voice.flooding.title }}</div>
+				<div class="value"><i class="fas fa-ban"></i><input name="flooding" type="range" class="custom-range" min="0" max="100" step="1" title=" " /></div>
+			</li>
+			<li class="separator">
+				<button name="test" type="button" class="btn btn-sm btn-primary">{{ test.button }}</button>
+			</li>
+		</ul>
+		<ul class="chat">
+			<li>
+				<div class="title" title="{{ chat.timestamp.help }}">{{ chat.timestamp.title }}</div>
+				<div class="value">
+					<div class="custom-control custom-switch">
+						<input name="timestamp" type="checkbox" class="custom-control-input" id="timestamp" />
+						<label class="custom-control-label" for="timestamp"></label>
+					</div>
+				</div>
+			</li>
+			<li>
+				<div class="title" title="{{ chat.autoscroll.help }}">{{ chat.autoscroll.title }}</div>
+				<div class="value">
+					<div class="custom-control custom-switch">
+						<input name="autoscroll" type="checkbox" class="custom-control-input" id="autoscroll" />
+						<label class="custom-control-label" for="autoscroll"></label>
+					</div>
+				</div>
+			</li>
+		</ul>
+		<ul class="iofile">
+			<li>
+				<div class="title" title="{{ iofile.importer.help }}">{{ iofile.importer.title }}</div>
+				<div class="value">
+					<button name="import" type="button" class="btn btn-sm btn-primary">{{ iofile.importer.button }}</button>
+				</div>
+			</li>
+			<li>
+				<div class="title" title="{{ iofile.exporter.help }}">{{ iofile.exporter.title }}</div>
+				<div class="value">
+					<button name="export" type="button" class="btn btn-sm btn-primary">{{ iofile.exporter.button }}</button>
+				</div>
+			</li>
+		</ul>
+	</div>
+</template>
