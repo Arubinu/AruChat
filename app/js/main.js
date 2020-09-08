@@ -1,4 +1,10 @@
 window.addEventListener( 'load', () => {
+	var html_change = document.createEvent( 'HTMLEvents' );
+	html_change.initEvent( 'change', true, false );
+
+	var mouse_click = document.createEvent( 'MouseEvents' );
+	mouse_click.initEvent( 'click', true, false );
+
 	var	msg			= null,
 		url			= '',
 		line		= [],
@@ -9,6 +15,7 @@ window.addEventListener( 'load', () => {
 		colors		= {},
 		inchat		= false,
 		infos		= null,
+		users		= {};
 		words		= {},
 		repeat		= [ 0, '' ],
 		stream		= null,
@@ -18,6 +25,7 @@ window.addEventListener( 'load', () => {
 		excludes	= [],
 		language	= null;
 		followers	= [ 0, null ],
+		ksettings	= [ 'voice', 'rate', 'pitch', 'volume', 'sentences', 'words', 'links', 'emotes', 'ascii', 'lusername', 'lmessage', 'repeat', 'flooding' ],
 		sentences	= {},
 		templates	= {},
 		originals	= {
@@ -58,6 +66,7 @@ window.addEventListener( 'load', () => {
 		svoice = null,
 		irate = null,
 		iascii = null,
+		iaudio = null,
 		ilinks = null,
 		ipitch = null,
 		iemotes = null,
@@ -74,10 +83,14 @@ window.addEventListener( 'load', () => {
 		usubscriber = null,
 		ubroadcaster = null;
 
+	/**
+	 * @desc Loads saved data into the browser's internal storage
+	 */
 	function load()
 	{
 		ichannel.value = ( localStorage.getItem( 'channel' ) || '' );
 		token = ( localStorage.getItem( 'token' ) || '' );
+		iaudio.checked = ( ( localStorage.getItem( 'audio' ) || 'true' ) == 'true' );
 
 		irate.value = parseFloat( localStorage.getItem( 'rate' ) || 1 );
 		ipitch.value = parseFloat( localStorage.getItem( 'pitch' ) || .8 );
@@ -99,19 +112,36 @@ window.addEventListener( 'load', () => {
 		usubscriber.checked = ( ( localStorage.getItem( 'subscriber' ) || 'true' ) == 'true' );
 		ubroadcaster.checked = ( ( localStorage.getItem( 'broadcaster' ) || 'true' ) == 'true' );
 
-		var event = document.createEvent( 'HTMLEvents' );
-		event.initEvent( 'change', true, false );
-		ivolume.dispatchEvent( event );
-		irepeat.dispatchEvent( event );
-		ilusernames.dispatchEvent( event );
-		ilmessages.dispatchEvent( event );
-		iflooding.dispatchEvent( event );
+		ivolume.dispatchEvent( html_change );
+		irepeat.dispatchEvent( html_change );
+		ilusernames.dispatchEvent( html_change );
+		ilmessages.dispatchEvent( html_change );
+		iflooding.dispatchEvent( html_change );
+
+		// obsolete
+		try
+		{
+			var tmp = localStorage.getItem( 'excludes' );
+			localStorage.removeItem( 'excludes' );
+
+			tmp = JSON.parse( tmp );
+			if ( Array.isArray( tmp ) )
+				tmp.forEach( ( user_name ) => { users[ user_name ] = { volume: 0 }; } );
+		} catch ( e ) {}
 
 		try
 		{
-			var tmp = JSON.parse( localStorage.getItem( 'excludes' ) );
-			if ( Array.isArray( tmp ) )
-				excludes = tmp;
+			var tmp = JSON.parse( localStorage.getItem( 'users' ) );
+			if ( typeof( tmp ) === 'object' )
+			{
+				Object.keys( tmp ).forEach( ( user_name ) => {
+					var tuser = tmp[ user_name ];
+					users[ user_name ] = { name: tuser.name };
+					ksettings.forEach( ( key ) => {
+						users[ user_name ][ key ] = ( ( typeof( tuser[ key ] ) !== 'undefined' ) ? tuser[ key ] : undefined );
+					} );
+				} );
+			}
 		} catch ( e ) {}
 
 		try
@@ -137,18 +167,23 @@ window.addEventListener( 'load', () => {
 				words = tmp;
 		} catch ( e ) {}
 
-		bexcluded.innerText = language[ 2 ].manage.variable.replace( '%s', excludes.length );
+		Object.keys( users ).forEach( ( user_name ) => { users_add( user_name, true ); } );
 		bwords.innerText = language[ 2 ].manage.variable.replace( '%s', Object.keys( words ).length );
 
 		toggle( 'timestamp' );
 	}
 
+	/**
+	 * @desc Backs up data to the browser's internal storage
+	 * @param	{Object}			[data]				Specify the data to back up
+	 */
 	function save( data )
 	{
 		try
 		{
 			localStorage.setItem( 'channel', ( data ? data.channel : channel[ 0 ] ) );
 			localStorage.setItem( 'token', ( data ? data.token : token ) );
+			localStorage.setItem( 'audio', ( data ? data.audio : iaudio.checked.toString() ) );
 
 			localStorage.setItem( 'voice', ( data ? data.voice : ( voice[ 1 ] ? ( voice[ 1 ].lang + '|' + voice[ 1 ].name ) : '' ) ) );
 			localStorage.setItem( 'rate', ( data ? data.rate : irate.value ) );
@@ -171,12 +206,16 @@ window.addEventListener( 'load', () => {
 			localStorage.setItem( 'subscriber', ( data ? data.subscriber : usubscriber.checked ) );
 			localStorage.setItem( 'broadcaster', ( data ? data.broadcaster : ubroadcaster.checked ) );
 
-			localStorage.setItem( 'excludes', ( data ? data.excludes : JSON.stringify( excludes ) ) );
+			localStorage.setItem( 'users', ( data ? data.users : JSON.stringify( users ) ) );
 			localStorage.setItem( 'sentences', ( data ? data.sentences : JSON.stringify( sentences ) ) );
 			localStorage.setItem( 'words', ( data ? data.words : JSON.stringify( words ) ) );
 		} catch ( e ) {}
 	}
 
+	/**
+	 * @desc Import settings from a file
+	 * @return	{promise}								resolve or reject
+	 */
 	function import_config()
 	{
 		return new Promise( ( resolve, reject ) => {
@@ -201,12 +240,14 @@ window.addEventListener( 'load', () => {
 			};
 			input.onerror = ( error ) => { reject( error ); };
 
-			var event = document.createEvent( 'MouseEvents' );
-			event.initEvent( 'click', true, false );
-			input.dispatchEvent( event );
+			input.dispatchEvent( mouse_click );
 		} );
 	}
 
+	/**
+	 * @desc Exports settings as a file
+	 * @param	{Object}			data				The message to be displayed
+	 */
 	function export_config( data )
 	{
 		data = btoa( JSON.stringify( data ) );
@@ -219,13 +260,19 @@ window.addEventListener( 'load', () => {
 		a.style.display = 'none';
 		document.body.appendChild( a );
 
-		var event = document.createEvent( 'MouseEvents' );
-		event.initEvent( 'click', true, false );
-		a.dispatchEvent( event );
+		a.dispatchEvent( mouse_click );
 
 		window.URL.revokeObjectURL( url );
 	}
 
+	/**
+	 * @desc Send HTTP requests easily
+	 * @param	{string}			url					Targeted address
+	 * @param	{Object}			[options]			Options to add to the XMLHttpRequest instance
+	 * @param	{bool}				[force_url]			Do not add queries intended for the Twitch API
+	 * @param	{bool}				[force_return]		Return the XMLHttpRequest instance directly
+	 * @return	{promise}								resolve or reject
+	 */
 	function request( url, options, force_url, force_return )
 	{
 		return new Promise( ( resolve, reject ) => {
@@ -263,6 +310,11 @@ window.addEventListener( 'load', () => {
 		} );
 	}
 
+	/**
+	 * @desc Get information about the Twitch channel
+	 * @param	{string}			channel_id			Twitch Channel ID
+	 * @param	{function}			callback			Returns the object resulting from the request
+	 */
 	function channel_infos( channel_id, callback )
 	{
 		if ( !channel_id )
@@ -276,6 +328,11 @@ window.addEventListener( 'load', () => {
 			} );
 	}
 
+	/**
+	 * @desc Get information related to the current Stream
+	 * @param	{string}			channel_id			Twitch Channel ID
+	 * @param	{function}			callback			Returns the object resulting from the request
+	 */
 	function channel_stream( channel_id, callback )
 	{
 		if ( !channel_id )
@@ -295,6 +352,11 @@ window.addEventListener( 'load', () => {
 			} );
 	}
 
+	/**
+	 * @desc Get the last followers of the Twitch channel
+	 * @param	{string}			channel_id			Twitch Channel ID
+	 * @param	{function}			callback			Returns the object resulting from the request
+	 */
 	function channel_followers( channel_id, callback )
 	{
 		if ( !channel_id )
@@ -305,6 +367,12 @@ window.addEventListener( 'load', () => {
 			.catch( ( error ) => { console.error( 'followers:', error ); } );
 	}
 
+	/**
+	 * @desc Convert HTML code to elements
+	 * @param	{string}			template			Code HTML
+	 * @param	{bool}				first				Return only the first element
+	 * @return	{(Array|HTMLElement)}					Element or list of elements
+	 */
 	function html( template, first )
 	{
 		var div = document.createElement( 'div' );
@@ -312,8 +380,15 @@ window.addEventListener( 'load', () => {
 		return ( first ? div.children[ 0 ] : div.children );
 	}
 
+	/**
+	 * @desc Open a modal
+	 * @param	{Object}			obj					Data to send to the template
+	 * @param	{bool}				[large]				Enlarges the width of the modal
+	 * @return	{HTMLElement}							Modal element
+	 */
 	function modal( obj, large )
 	{
+		obj.large = !!large;
 		var elem = html( templates.modal( Object.assign( {}, obj, language[ 2 ] ) ), true );
 		document.body.appendChild( elem );
 
@@ -345,10 +420,45 @@ window.addEventListener( 'load', () => {
 		return ( elem );
 	}
 
+	/**
+	 * @desc Create a floating drop-down list
+	 * @param	{HTMLElement}		elem				HTML element of the list
+	 * @return	{Object}								Drop-down list instance
+	 */
+	function fixed_dropdown( elem )
+	{
+		var dropdown = new BSN.Dropdown( elem );
+		elem.parentNode.addEventListener( 'show.bs.dropdown', function( event ) {
+			var next = elem.querySelector( '.dropdown-toggle' );
+			var menu = elem.querySelector( '.dropdown-menu' );
+
+			var pos = { x: 0, y: 0 };
+			while ( next.offsetParent )
+			{
+				next = next.offsetParent;
+				pos.x += next.offsetLeft;
+				pos.y += next.offsetTop;
+			}
+
+			menu.style.position = 'fixed';
+			menu.style.top = `${pos.y}px`;
+			menu.style.right = `${document.body.offsetWidth - pos.x}px`;
+		}, false );
+
+		return ( dropdown );
+	}
+
+	/**
+	 * @desc Initializes the voice and the entire interface
+	 * @param	{number}			[passe]				Step of the initialization process
+	 */
 	function init( passe )
 	{
 		if ( !passe )
 		{
+			if ( localStorage.getItem( 'reset' ) === '1' )
+				localStorage.clear();
+
 			request( './languages.json', null, true )
 				.then( ( data ) => {
 					var list = [];
@@ -381,11 +491,11 @@ window.addEventListener( 'load', () => {
 							dchat = dbase.querySelector( '#chat > ul' );
 							dsettings = dbase.querySelector( '#settings' );
 							btest = dsettings.querySelector( 'button[name=test]' );
+							breset = dsettings.querySelector( 'button[name=reset]' );
 							bwords = dsettings.querySelector( 'button[name=words]' );
 							bexport = dsettings.querySelector( 'button[name=export]' );
 							bimport = dsettings.querySelector( 'button[name=import]' );
 							bconnect = dsettings.querySelector( 'button[name=connect]' );
-							bexcluded = dsettings.querySelector( 'button[name=excluded]' );
 							bsentences = dsettings.querySelector( 'button[name=sentences]' );
 							bdisconnect = dsettings.querySelector( 'button[name=disconnect]' );
 							tviewers = dbase.querySelector( '.viewers' );
@@ -394,7 +504,10 @@ window.addEventListener( 'load', () => {
 							tlanguages = dbase.querySelector( '.languages' );
 							svoice = dsettings.querySelector( 'div[name=voice]' );
 							irate = dsettings.querySelector( 'input[name=rate]' );
+							iuser = dsettings.querySelector( 'input[name=user]' );
+							iuseradd = iuser.parentNode.parentNode.querySelector( '.fa-user-plus' );
 							iascii = dsettings.querySelector( 'input[name=ascii]' );
+							iaudio = dsettings.querySelector( 'input[name=audio]' );
 							ilinks = dsettings.querySelector( 'input[name=links]' );
 							ipitch = dsettings.querySelector( 'input[name=pitch]' );
 							iemotes = dsettings.querySelector( 'input[name=emotes]' );
@@ -438,7 +551,6 @@ window.addEventListener( 'load', () => {
 									.then( ( data ) => {
 										var changelog = data.response.replace( /^(v[0-9]+:)$/gm, '<u>\$1</u>' ).replace( /\'(.*)\'/gm, '\'<i>\$1</i>\'' );
 										modal( {
-											large:			true,
 											title:			( tchangelog.getAttribute( 'data-original-title' ) || tchangelog.title ),
 											html:			'<span style="white-space: pre-wrap;">%s</span>'.replace( '%s', changelog ),
 											footer: {
@@ -446,7 +558,7 @@ window.addEventListener( 'load', () => {
 												close:		false,
 												confirm:	false
 											}
-										} );
+										}, true );
 									} )
 									.catch( ( error ) => {
 										console.error( 'changelog:', error );
@@ -542,6 +654,10 @@ window.addEventListener( 'load', () => {
 			zbase.addEventListener( 'click', zclick );
 
 			btest.addEventListener( 'click', () => { speech( language[ 2 ].test.speech ); } );
+			breset.addEventListener( 'click', () => {
+				localStorage.setItem( 'reset', '1' );
+				window.location.reload( true );
+			} );
 			bimport.addEventListener( 'click', () => {
 				import_config().then( ( data ) => {
 
@@ -572,203 +688,45 @@ window.addEventListener( 'load', () => {
 				disconnect();
 				connect();
 			} );
-			bexcluded.addEventListener( 'click', () => {
-				var add_user = ( item ) => {
-					var user = document.createElement( 'button' );
-					user.className = 'btn btn-sm btn-outline-info';
-					user.innerText = item;
-					user.title = language[ 2 ].users.excluded.delete;
+			bsentences.addEventListener( 'click', function() {
+				sentences_button( this, null, ( imodal, obj, confirm ) => {
+					if ( confirm )
+					{
+						Object.keys( obj ).forEach( ( key ) => {
+							var original = sentence( 0b000, key );
+							var value = obj[ key ][ 2 ].value.trim();
+							var text = ( ( !value || value == original[ 2 ] ) ? '' : value );
+							var chat_enabled = ( obj[ key ][ 0 ].getAttribute( 'data-enabled' ) == 'true' );
+							var speech_enabled = ( obj[ key ][ 1 ].getAttribute( 'data-enabled' ) == 'true' );
 
-					user.addEventListener( 'click', () => {
-						excludes.splice( excludes.indexOf( item ), 1 );
-						if ( user.Tooltip )
-							user.Tooltip.dispose();
-						user.remove();
-
-						bexcluded.innerText = language[ 2 ].manage.variable.replace( '%s', excludes.length );
-					} );
-
-					body.appendChild( user );
-					new BSN.Tooltip( user, { placement: ( user.classList.contains( 'tip-left' ) ? 'left' : 'top' ), delay: 250 } );
-				};
-
-				var imodal = modal( {
-					title:					( bexcluded.getAttribute( 'data-original-title' ) || bexcluded.title ),
-					body:					'',
-					footer: {
-						input: {
-							icon:			'user-plus',
-							value:			'',
-							placeholder:	language[ 2 ].modals.excluded.input,
-							click:			( elem, obj ) => {
-								var item = elem.value.trim().toLowerCase();
-								if ( !item || excludes.indexOf( item ) >= 0 )
-									return ;
-
-								add_user( item );
-								excludes.push( item );
-
-								bexcluded.innerText = language[ 2 ].manage.variable.replace( '%s', excludes.length );
-								elem.value = '';
-							}
-						},
-						close:				true,
-						confirm:			false
+							var sentences_enabled = ( text || chat_enabled != original[ 0 ] || speech_enabled != original[ 1 ] );
+							sentences[ key ] = ( sentences_enabled ? [ text, chat_enabled, speech_enabled ] : undefined );
+						} );
 					}
-				} );
-
-				var body = imodal.querySelector( '.modal-body' );
-				excludes.forEach( add_user );
-			} );
-			bsentences.addEventListener( 'click', () => {
-				var all = {};
-				var data = {};
-				Object.keys( originals ).forEach( ( subkey, index ) => {
-					var sdata = sentence( subkey );
-					var key = ( ( subkey.indexOf( '_' ) > 0 ) ? subkey.slice( 0, subkey.indexOf( '_' ) ) : subkey );
-
-					if ( key == subkey )
-						data[ key ] = { key: key, name: originals[ key ][ 0 ], list: [] };
-
-					data[ key ].list.push( {
-						subkey:				subkey,
-						subname:			originals[ subkey ][ 0 ],
-						input: {
-							value:			sdata[ 2 ],
-							placeholder:	sentence( subkey, true )[ 2 ]
-						},
-						small:				'<u>%s:</u> '.replace( '%s', language[ 2 ].sentences.variables ) + originals[ subkey ][ 1 ],
-						chat:				sdata[ 0 ],
-						speech:				sdata[ 1 ]
-					} );
-				} );
-
-				var imodal = modal( {
-					title:			( bsentences.getAttribute( 'data-original-title' ) || bsentences.title ),
-					html:			templates.sentences( { data: Object.values( data ) } ),
-					footer: {
-						input:		false,
-						close:		true,
-						confirm:	( elem, obj ) => {
-							Object.keys( all ).forEach( ( key ) => {
-								var value = all[ key ][ 2 ].value.trim();
-								var text = ( ( !value || value == sentence( key, true )[ 2 ] ) ? '' : value );
-								var chat_enabled = ( all[ key ][ 0 ].getAttribute( 'data-enabled' ) == 'true' );
-								var speech_enabled = ( all[ key ][ 1 ].getAttribute( 'data-enabled' ) == 'true' );
-								sentences[ key ] = [ text, chat_enabled, speech_enabled ];
-							} );
-						}
-					}
-				} );
-
-				var body = imodal.querySelector( '.modal-body' );
-
-				Object.keys( originals ).forEach( ( subkey, index ) => {
-					var key = ( ( subkey.indexOf( '_' ) > 0 ) ? subkey.slice( 0, subkey.indexOf( '_' ) ) : subkey );
-
-					//var tab = body.querySelector( `#sentences_${key}` );
-					var input = body.querySelectorAll( 'input' )[ index ];
-					var chat_enabled = body.querySelectorAll( 'i.chat' )[ index ];
-					var speech_enabled = body.querySelectorAll( 'i.speech' )[ index ];
-
-					all[ key ] = [ chat_enabled, speech_enabled, input ];
-					chat_enabled.addEventListener( 'click', function() { var value = !( this.getAttribute( 'data-enabled' ) == 'true' ); this.setAttribute( 'data-enabled', value ); this.classList.toggle( 'fa-comment-dots', value ); this.classList.toggle( 'fa-comment-slash', !value ); } );
-					speech_enabled.addEventListener( 'click', function() { var value = !( this.getAttribute( 'data-enabled' ) == 'true' ); this.setAttribute( 'data-enabled', value ); this.classList.toggle( 'fa-volume-up', value ); this.classList.toggle( 'fa-volume-off', !value ); } );
-				} );
-
-				var reset = document.createElement( 'button' );
-				reset.className = 'btn btn-sm btn-danger';
-				reset.innerText = language[ 2 ].modals.sentences.reset.button;
-				reset.title = language[ 2 ].modals.sentences.reset.title;
-				reset.addEventListener( 'click', () => {
+				}, ( imodal ) => {
 					imodal.Modal.hide();
 
 					sentences = {};
-					var event = document.createEvent( 'MouseEvents' );
-					event.initEvent( 'click', true, false );
-					bsentences.dispatchEvent( event );
+					this.dispatchEvent( mouse_click );
 				} );
-				imodal.querySelector( '.modal-footer' ).prepend( reset );
-				new BSN.Tooltip( reset, { placement: ( reset.classList.contains( 'tip-left' ) ? 'left' : 'top' ), delay: 250 } );
-
-				Array.from( imodal.querySelectorAll( '.modal-body .nav-link' ) ).map( item => new BSN.Tab( item, { height: true } ) );
 			} );
-			bwords.addEventListener( 'click', () => {
-				var get_data = () => {
-					var data = { data: [] };
-					Object.keys( words ).forEach( ( word ) => {
-						var value = words[ word ];
-						data.data.push( { error: false, word: word, replace: value[ 1 ], mode: value[ 0 ] } );
-					} );
-
-					return ( Object.assign( data, language[ 2 ] ) );
-				};
-				var set_actions = ( imodal ) => {
-					imodal.querySelectorAll( 'tbody > tr' ).forEach( ( elem ) => {
-						var key = elem.querySelector( 'th' ).innerText;
-						var mode = () => {
-							var user = elem.querySelector( '.fa-user' ).classList.contains( 'enabled' );
-							var message = elem.querySelector( '.fa-comment-dots' ).classList.contains( 'enabled' );
-
-							return ( ( user && message ) ? 3 : ( message ? 2 : ( user ? 1 : 0 ) ) );
-						};
-
-						elem.querySelectorAll( '.fa-user, .fa-comment-dots' ).forEach( ( selem ) => {
-							selem.addEventListener( 'click', function() {
-								this.classList.toggle( 'enabled' );
-								words[ key ][ 0 ] = mode();
-							} );
-						} );
-
-						elem.querySelector( '.fa-trash-alt' ).addEventListener( 'click', function() {
-							delete words[ key ];
-							elem.remove();
-							update_button();
-						} );
-
-						elem.querySelector( 'input' ).addEventListener( 'change', function() {
-							words[ key ] = [ mode(), this.value ];
-						} );
-					} );
-				};
-				var update_button = () => {
-					bwords.innerText = language[ 2 ].manage.variable.replace( '%s', Object.keys( words ).length );
-				};
-
-				var imodal = modal( {
-					large:			true,
-					title:			( bwords.getAttribute( 'data-original-title' ) || bwords.title ),
-					html:			templates.words( get_data() ),
-					footer: {
-						input: {
-							icon:			'clone',
-							value:			'',
-							placeholder:	language[ 2 ].modals.words.input,
-							click:			( elem, obj ) => {
-								var item = elem.value.trim().toLowerCase();
-								Object.keys( words ).forEach( ( key ) => {
-									if ( item == key )
-										item = '';
-								} );
-								if ( !item )
-									return ;
-
-								words[ item ] = [ 2, '' ];
-								imodal.querySelector( '.modal-body' ).innerHTML = templates.words( get_data() );
-								set_actions( imodal );
-
-								update_button();
-								elem.value = '';
-							}
-						},
-						close:		true,
-						confirm:	false
-					}
+			bwords.addEventListener( 'click', function() {
+				words_button( this, words, ( imodal, obj, confirm ) => {
+					words = obj;
+				}, ( imodal, obj, value ) => {
+					words = obj;
 				} );
-
-				set_actions( imodal );
 			} );
 			bdisconnect.addEventListener( 'click', disconnect );
+
+			ichannel.addEventListener( 'keyup', ( event ) => {
+				if ( typeof( event.code ) !== 'undefined' && event.code.toLowerCase() === 'enter' )
+					connect();
+			} );
+
+			iuser.addEventListener( 'input', users_search );
+			iuser.addEventListener( 'change', users_search );
+			iuseradd.addEventListener( 'click', users_add );
 
 			ivolume.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.volume.change.replace( '%d', parseInt( parseFloat( this.value ) * 100 ) ) ); } );
 			ilusernames.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.limit.usernames.change.replace( '%d', parseInt( this.value ) ) ); } );
@@ -815,7 +773,7 @@ window.addEventListener( 'load', () => {
 					footer: {
 						input:		false,
 						close:		true,
-						confirm:	( elem, obj ) => {
+						confirm:	( elem, cobj ) => {
 							var value = elem.querySelector( 'input' ).value.trim();
 							if ( value != token )
 							{
@@ -846,7 +804,6 @@ window.addEventListener( 'load', () => {
 							var blob = new Blob( [ new Uint8Array( data.response ) ], { type: 'image/png' } );
 							var image = ( window.URL || window.webkitURL ).createObjectURL( blob );
 							var imodal = modal( {
-								large:			true,
 								title:			( this.getAttribute( 'data-original-title' ) || this.title ),
 								html:			'<img src="%s" style="max-width: 100%;" />'.replace( '%s', image ),
 								footer: {
@@ -854,12 +811,10 @@ window.addEventListener( 'load', () => {
 									close:		false,
 									confirm:	false
 								}
-							} );
+							}, true );
 
 							imodal.addEventListener( 'hidden.bs.modal', ( event ) => {
-								var event = document.createEvent( 'MouseEvents' );
-								event.initEvent( 'click', true, false );
-								more.dispatchEvent( event );
+								more.dispatchEvent( mouse_click );
 							}, false );
 						} )
 						.catch( ( error ) => {
@@ -867,8 +822,8 @@ window.addEventListener( 'load', () => {
 						} );
 				} );
 			} );
-			ivolume.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { ivolume.value = 0; } );
-			iflooding.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { iflooding.value = 0; } );
+			ivolume.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { ivolume.value = 0; ivolume.dispatchEvent( html_change ); } );
+			iflooding.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { iflooding.value = 0; iflooding.dispatchEvent( html_change ); } );
 
 			Array.from( document.querySelectorAll( '.custom-toggle' ) ).map( elem => new BSN.Collapse( elem ) );
 			Array.from( document.querySelectorAll( '[title]' ) ).map( elem => new BSN.Tooltip( elem, { placement: ( elem.classList.contains( 'tip-left' ) ? 'left' : 'top' ), delay: 250 } ) );
@@ -908,7 +863,16 @@ window.addEventListener( 'load', () => {
 			var channel_update = () => {
 				var tchannel = channel[ 1 ];
 				if ( !tchannel )
-					return ;
+					return ( setTimeout( channel_update, 500 ) );
+
+				dsettings.querySelectorAll( '[data-user]' ).forEach( ( elem ) => {
+					var elem_name = elem.getAttribute( 'data-user' ).trim().toLowerCase();
+					if ( typeof( users[ elem_name ] ) !== 'undefined' )
+						return ;
+
+					delete users[ elem_name ];
+					elem.remove();
+				} );
 
 				channel_stream( tchannel, ( data ) => {
 					stream = data;
@@ -918,7 +882,7 @@ window.addEventListener( 'load', () => {
 
 				channel_followers( tchannel, ( data ) => {
 					if ( channel[ 1 ] != tchannel )
-						return ;
+						return ( channel_next() );
 
 					var current = {};
 					data.follows.forEach( ( item ) => { current[ item.user._id ] = item.user.display_name; } );
@@ -939,12 +903,12 @@ window.addEventListener( 'load', () => {
 						if ( arrivals.length )
 						{
 							console.log( 'onFollow:', arrivals );
-							var users = arrivals.join( ', ' );
-							var [ chat_enabled, speech_enabled, template ] = sentence( 'follow' );
+							var usernames = arrivals.join( ', ' );
+							var [ chat_enabled, speech_enabled, template ] = sentence( 0b100, 'follow' );
 							if ( chat_enabled )
-								chat( `New follower(s): ${users}` );
+								chat( `New follower(s): ${usernames}` );
 							if ( speech_enabled )
-								speech( template.replace( /\$usernames\$/g, users ) );
+								speech( template.replace( /\$usernames\$/g, usernames ) );
 						}
 					}
 					else
@@ -970,10 +934,13 @@ window.addEventListener( 'load', () => {
 			var smenu = svoice.querySelector( '.dropdown-menu' );
 			smenu.querySelectorAll( ':scope > a' ).forEach( ( item ) => { item.remove(); } );
 
+			var check_voice = false;
+			voices.forEach( ( item, index ) => { check_voice = ( check_voice || ( `${item.lang}|${item.name}` == localStorage.getItem( 'voice' ) ) ); } );
+
 			voices.sort( ( a, b ) => { return ( ( a.lang < b.lang ) ? -1 : ( a.lang > b.lang ) ); } );
 			voices.forEach( ( item, index ) => {
 				var text = `[${item.lang}] ${item.name}`;
-				if ( item.default )
+				if ( ( check_voice && `${item.lang}|${item.name}` == localStorage.getItem( 'voice' ) ) || ( !check_voice && item.default ) )
 				{
 					voice = [ index, item ];
 					svoice.querySelector( ':scope > button' ).innerText = text;
@@ -985,14 +952,13 @@ window.addEventListener( 'load', () => {
 
 				var option = document.createElement( 'a' );
 				option.href = '#';
-				//option.selected = voice.default;
 				option.className = 'dropdown-item';
 				option.innerText = text;
 
 				smenu.appendChild( option );
 			} );
 
-			var dvoice = new BSN.Dropdown( svoice );
+			var dvoice = fixed_dropdown( svoice );
 			svoice.parentNode.addEventListener( 'click', ( event ) => {
 				if ( !event.target.classList.contains( 'dropdown-item' ) )
 					return ;
@@ -1001,30 +967,13 @@ window.addEventListener( 'load', () => {
 				var tvoice = voices[ index ];
 				var text = `[${tvoice.lang}] ${tvoice.name}`;
 
-				tvoice = [ index, tvoice ];
+				voice = [ index, tvoice ];
 				svoice.querySelector( ':scope > button' ).innerText = text;
 
 				var span = document.createElement( 'span' );
 				span.textContent = text;
 				svoice.setAttribute( ( svoice.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), span.innerHTML );
 			} );
-
-			var tvoice = localStorage.getItem( 'voice' );
-			if ( tvoice )
-			{
-				var split = tvoice.split( '|' );
-				tvoice = { lang: split[ 0 ], name: split.slice( 1 ).join( '|' ) };
-
-				var text = `[${tvoice.lang}] ${tvoice.name}`;
-				var item = Array.from( svoice.querySelectorAll( '.dropdown-item' ) ).find( item => { return ( item.textContent === text ); } );
-				if ( item )
-				{
-					var event = document.createEvent( 'MouseEvents' );
-					event.initEvent( 'click', true, false );
-					item.dispatchEvent( event );
-					dvoice.toggle();
-				}
-			}
 
 			msg = new SpeechSynthesisUtterance();
 			msg.onend = () => { inchat = false; };
@@ -1035,6 +984,9 @@ window.addEventListener( 'load', () => {
 			alert( language[ 2 ].unsupported );
 	}
 
+	/**
+	 * @desc Connect to the Twitch channel
+	 */
 	function connect()
 	{
 		bconnect.blur();
@@ -1044,7 +996,6 @@ window.addEventListener( 'load', () => {
 		channel = [ ichannel.value, '' ];
 		followers = [ 0, null ];
 
-		//console.log( 'connect:', channel[ 0 ], ( token || null ) );
 		if ( channel[ 0 ] )
 			ComfyJS.Init( channel[ 0 ], ( token || null ) );
 			//ComfyJS.Init( channel[ 0 ], ( token || null ), [ 'ChannelA', 'ChannelB', 'ChannelC' ] );
@@ -1058,6 +1009,9 @@ window.addEventListener( 'load', () => {
 		}
 	}
 
+	/**
+	 * @desc Disconnecting from the Twitch channel
+	 */
 	function disconnect( text )
 	{
 		bdisconnect.blur();
@@ -1080,6 +1034,9 @@ window.addEventListener( 'load', () => {
 		update();
 	}
 
+	/**
+	 * @desc Updates the channel information that is displayed
+	 */
 	function update()
 	{
 		var cinfos = ( typeof( infos ) === 'object' && infos !== null );
@@ -1096,7 +1053,7 @@ window.addEventListener( 'load', () => {
 
 			try
 			{
-				if ( audios )
+				if ( audios && iaudio && iaudio.checked )
 					audios[ cstream ? 0 : 1 ].play();
 			} catch ( e ) {}
 		}
@@ -1106,7 +1063,7 @@ window.addEventListener( 'load', () => {
 		if ( cinfos || cstream )
 		{
 			// subdata.mature: +18
-			url = ( subdata ? subdata.url : '' ); // onclick
+			url = ( subdata ? subdata.url : '' );
 			zname.innerText = ( subdata ? subdata.display_name : '...' );
 			zstatus.innerText = ( subdata ? subdata.status : '...' );
 			zgame.innerText = ( data ? data.game : '...' );
@@ -1122,7 +1079,6 @@ window.addEventListener( 'load', () => {
 						.then( ( data ) => {
 							var blob = new Blob( [ new Uint8Array( data.response ) ], { type: 'image/png' } );
 							zlogo.src = ( window.URL || window.webkitURL ).createObjectURL( blob );
-							//zlogo.src = 'data:image/png;base64,' + Base64.encode( blob );
 						} )
 						.catch( ( error ) => {
 							console.error( 'logo:', error );
@@ -1141,15 +1097,493 @@ window.addEventListener( 'load', () => {
 		tfollowers.innerText = ( ( typeof( followers[ 1 ] ) === 'object' && followers[ 1 ] !== null ) ? followers[ 0 ].toString().replace( /\B(?=(\d{3})+(?!\d))/g, ' ' ) : '-' );
 	}
 
-	function sentence( key, base )
+	/**
+	 * @desc Allows you to manage the settings of a particular user
+	 * @param	{string}			user_name			User name to add
+	 * @param	{bool}				[force]				Allows you to initialize the interface with existing users
+	 */
+	function users_add( user_name, force )
 	{
-		base = ( base || typeof( sentences[ key ] ) === 'undefined' );
-		var chat_enabled = ( base ? originals[ key ][ 3 ] : sentences[ key ][ 1 ] );
-		var speech_enabled = ( base ? originals[ key ][ 4 ] : sentences[ key ][ 2 ] );
-		var template = ( ( base || !sentences[ key ][ 0 ].trim() ) ? originals[ key ][ 2 ] : sentences[ key ][ 0 ] );
+		iuser.focus();
+		user_name = ( ( typeof( user_name ) === 'string' ) ? user_name : iuser.value ).trim().toLowerCase();
+		if ( force !== true )
+		{
+			if ( !user_name || typeof( users[ user_name ] ) !== 'undefined' )
+				return ;
+
+			users[ user_name ] = { name: user_name };
+		}
+
+		ksettings.forEach( ( key ) => {
+			if ( typeof( users[ user_name ][ key ] ) === 'undefined' )
+				users[ user_name ][ key ] = undefined;
+		} );
+
+		var li = html( templates.user( Object.assign( { data: users[ user_name ] }, language[ 2 ] ) ), true );
+		dsettings.querySelector( '.users' ).appendChild( li );
+
+		var manage = function( data ) {
+			if ( !data || data instanceof Event )
+			{
+				data = {};
+				ksettings.forEach( ( key ) => {
+					data[ key ] = users[ user_name ][ key ];
+				} );
+			}
+
+			var voice_user = [ -1, null ];
+			var imodal = modal( {
+				title:			language[ 2 ].users.manage.title.replace( '%s', user_name ),
+				html:			templates.user_settings( Object.assign( { data: data }, language[ 2 ] ) ),
+				footer: {
+					input:		false,
+					close:		true,
+					confirm:	( elem, cobj ) => {
+						var body = elem.querySelector( '.modal-body' );
+						body.querySelectorAll( '.value input' ).forEach( ( elem ) => {
+							var input_name = elem.getAttribute( 'name' );
+							var input_checked = body.querySelector( 'input[name=%s][type=checkbox]'.replace( '%s', input_name ) ).checked;
+							users[ user_name ][ input_name ] = ( input_checked ? elem[ elem.matches( '[type=checkbox]' ) ? 'checked' : 'value' ] : undefined );
+						} );
+
+						users[ user_name ].voice = ( voice_user ? ( voice_user[ 1 ].lang + '|' + voice_user[ 1 ].name ) : undefined );
+						users[ user_name ].sentences = ( body.querySelector( '.title input[name=sentences][type=checkbox]' ).checked ? data.sentences : undefined );
+						users[ user_name ].words = ( body.querySelector( '.title input[name=words][type=checkbox]' ).checked ? data.words : undefined );
+					}
+				}
+			} );
+
+			var body = imodal.querySelector( '.modal-body' );
+			body.querySelectorAll( '.title input[type=checkbox]' ).forEach( ( elem ) => {
+				var elem_name = elem.getAttribute( 'name' );
+				var elem_change = () => {
+					elem.parentNode.parentNode.parentNode.querySelectorAll( '.value .fas, .value input, .value button' ).forEach( ( ielem ) => {
+						if ( ielem.classList.contains( 'fas' ) )
+							ielem.classList.toggle( 'disabled', !elem.checked );
+						else
+							ielem.disabled = !elem.checked;
+					} );
+				};
+
+				elem.addEventListener( 'click', elem_change );
+				elem_change();
+			} );
+
+			var usvoice = body.querySelector( '.value div[name=voice]' );
+			var smenu = usvoice.querySelector( '.dropdown-menu' );
+
+			var check_voice = false;
+			voices.forEach( ( item, index ) => { check_voice = ( check_voice || ( `${item.lang}|${item.name}` == localStorage.getItem( 'voice' ) ) ); } );
+
+			voices.forEach( ( item, index ) => {
+				var text = `[${item.lang}] ${item.name}`;
+				if ( ( check_voice && `${item.lang}|${item.name}` == data.voice ) || ( !check_voice && item.default ) )
+				{
+					voice_user = [ index, item ];
+					usvoice.querySelector( ':scope > button' ).innerText = text;
+
+					var span = document.createElement( 'span' );
+					span.textContent = text;
+					usvoice.setAttribute( ( usvoice.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), span.innerHTML );
+				}
+
+				var option = document.createElement( 'a' );
+				option.href = '#';
+				option.className = 'dropdown-item';
+				option.innerText = text;
+
+				smenu.appendChild( option );
+			} );
+
+			var dvoice = fixed_dropdown( usvoice );
+			usvoice.parentNode.addEventListener( 'click', ( event ) => {
+				if ( !event.target.classList.contains( 'dropdown-item' ) )
+					return ;
+
+				var index = Array.prototype.indexOf.call( event.target.parentNode.children, event.target );
+				var tvoice = voices[ index ];
+				var text = `[${tvoice.lang}] ${tvoice.name}`;
+
+				voice_user = [ index, tvoice ];
+				usvoice.querySelector( ':scope > button' ).innerText = text;
+
+				var span = document.createElement( 'span' );
+				span.textContent = text;
+				usvoice.setAttribute( ( usvoice.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), span.innerHTML );
+			} );
+
+			body.querySelector( 'button[name=sentences]' ).addEventListener( 'click', function() {
+				body.querySelectorAll( '.value input' ).forEach( ( elem ) => {
+					var input_name = elem.getAttribute( 'name' );
+					var input_checked = body.querySelector( 'input[name=%s][type=checkbox]'.replace( '%s', input_name ) ).checked;
+
+					var value = undefined;
+					if ( input_name == 'voice' )
+						value = ( voice_user ? ( voice_user[ 1 ].lang + '|' + voice_user[ 1 ].name ) : undefined );
+					else
+						value = ( input_checked ? elem.value : undefined );
+
+					data[ input_name ] = value;
+				} );
+
+				sentences_button( this, ( data.sentences || {} ), ( imodal, all, confirm ) => {
+					if ( confirm )
+					{
+						if ( typeof( data.sentences ) === 'undefined' )
+							data.sentences = {};
+
+						Object.keys( all ).forEach( ( key ) => {
+							var original = sentence( 0b100, key, data.sentences );
+							var value = all[ key ][ 2 ].value.trim();
+							var text = ( ( !value || value == original[ 2 ] ) ? '' : value );
+							var chat_enabled = ( all[ key ][ 0 ].getAttribute( 'data-enabled' ) == 'true' );
+							var speech_enabled = ( all[ key ][ 1 ].getAttribute( 'data-enabled' ) == 'true' );
+
+							var sentences_enabled = ( text || chat_enabled != original[ 0 ] || speech_enabled != original[ 1 ] );
+							data.sentences[ key ] = ( sentences_enabled ? [ text, chat_enabled, speech_enabled ] : undefined );
+						} );
+					}
+
+					manage( data );
+				}, ( imodal ) => {
+					imodal.Modal.hide();
+
+					data.sentences = {};
+					this.dispatchEvent( mouse_click );
+				} );
+			} );
+
+			body.querySelector( 'button[name=words]' ).addEventListener( 'click', function() {
+				words_button( this, ( data.words || {} ), ( imodal, obj, confirm ) => {
+					data.words = obj;
+					manage( data );
+				}, ( imodal, obj, value ) => {
+					data.words = obj;
+				} );
+			} );
+			body.querySelector( 'button[name=words]' ).innerText = language[ 2 ].manage.variable.replace( '%s', Object.keys( data.words ).length );
+
+			var uivolume = body.querySelector( '.value input[name=volume]' );
+			var uilusername = body.querySelector( '.value input[name=lusername]' );
+			var uilmessage = body.querySelector( '.value input[name=lmessage]' );
+			var uirepeat = body.querySelector( '.value input[name=repeat]' );
+			var uiflooding = body.querySelector( '.value input[name=flooding]' );
+
+			uivolume.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.volume.change.replace( '%d', parseInt( parseFloat( this.value ) * 100 ) ) ); } );
+			uilusername.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.limit.usernames.change.replace( '%d', parseInt( this.value ) ) ); } );
+			uilmessage.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.limit.messages.change.replace( '%d', parseInt( this.value ) ) ); } );
+			uirepeat.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.repeat.change.replace( '%d', parseInt( this.value ) ) ); } );
+			uiflooding.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.flooding.change.replace( '%d', parseInt( this.value ) ) ); } );
+
+			uivolume.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { uivolume.value = 0; uivolume.dispatchEvent( html_change ); } );
+			uiflooding.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { uiflooding.value = 0; uiflooding.dispatchEvent( html_change ); } );
+
+			uivolume.dispatchEvent( html_change );
+			uirepeat.dispatchEvent( html_change );
+			uilusername.dispatchEvent( html_change );
+			uilmessage.dispatchEvent( html_change );
+			uiflooding.dispatchEvent( html_change );
+
+			Array.from( body.querySelectorAll( '.custom-toggle' ) ).map( elem => new BSN.Collapse( elem ) );
+			Array.from( body.querySelectorAll( 'input[type=checkbox], button' ) ).map( elem => document.addEventListener( 'click', () => { elem.blur(); } ) );
+
+			var reset = document.createElement( 'button' );
+			reset.className = 'btn btn-sm btn-danger';
+			reset.innerText = language[ 2 ].modals.users.reset.button;
+			reset.title = language[ 2 ].modals.users.reset.title;
+			reset.addEventListener( 'click', () => {
+				imodal.Modal.hide();
+
+				users[ user_name ] = { name: user_name };
+				this.dispatchEvent( mouse_click );
+			} );
+			imodal.querySelector( '.modal-footer' ).prepend( reset );
+		};
+
+		var buttons = li.querySelectorAll( 'i' );
+		buttons[ 0 ].addEventListener( 'click', manage );
+		buttons[ 1 ].addEventListener( 'click', function() {
+			delete users[ user_name ];
+			li.remove();
+
+			this.Tooltip.dispose();
+		} );
+
+		Array.from( li.querySelectorAll( '[title]' ) ).map( elem => new BSN.Tooltip( elem, { placement: ( elem.classList.contains( 'tip-left' ) ? 'left' : 'top' ), delay: 250 } ) );
+
+		iuser.value = '';
+		users_search();
+	}
+
+	var users_timeout = 0;
+	/**
+	 * @desc Retrieve information related to the current Stream
+	 * @param	{Event}				event				Targeted address
+	 */
+	function users_search( event )
+	{
+		if ( users_timeout )
+			clearTimeout( users_timeout );
+
+		if ( event )
+		{
+			users_timeout = setTimeout( users_search, 500 );
+			return ;
+		}
+
+		var user_name = iuser.value.trim().toLowerCase();
+		dsettings.querySelectorAll( '[data-user]' ).forEach( ( elem ) => {
+			var elem_name = elem.getAttribute( 'data-user' ).trim().toLowerCase();
+			var visible = ( !user_name || elem_name.indexOf( user_name ) >= 0 );
+			elem.style.display = ( visible ? 'initial' : 'none' );
+		} );
+	}
+
+	/**
+	 * @desc Returns the phrase and its settings
+	 * @param	{binary}			mode				0b001: empty originals, 0b010: empty sentences, 0b100: get sentences (global settings)
+	 * @param	{string}			type				Type of sentence searched
+	 * @param	{(string|Object)}	more				Username to search or object containing the sentences
+	 * @return	{Array}									[ Chat is on, Speech is on, Sentence to speak ]
+	 */
+	function sentence( mode, type, more )
+	{
+		var chat_enabled = originals[ type ][ 3 ];
+		var speech_enabled = originals[ type ][ 4 ];
+		var template = originals[ type ][ 2 ];
+
+		var sentences_enabled = ( sentences && typeof( sentences[ type ] ) !== 'undefined' );
+		if ( ( mode & 0b100 ) == 0b100 && sentences_enabled )
+		{
+			var tmp = sentences[ type ];
+			chat_enabled = ( ( typeof( tmp[ 1 ] ) !== 'undefined' ) ? tmp[ 1 ] : chat_enabled );
+			speech_enabled = ( ( typeof( tmp[ 2 ] ) !== 'undefined' ) ? tmp[ 2 ] : speech_enabled );
+			template = ( ( tmp[ 0 ] && tmp[ 0 ].trim() ) ? tmp[ 0 ] : template );
+		}
+
+		if ( more && typeof( more ) === 'object' && typeof( more[ type ] ) !== 'undefined' )
+		{
+			var tmp = more[ type ];
+			chat_enabled = ( ( typeof( tmp[ 1 ] ) !== 'undefined' ) ? tmp[ 1 ] : chat_enabled );
+			speech_enabled = ( ( typeof( tmp[ 2 ] ) !== 'undefined' ) ? tmp[ 2 ] : speech_enabled );
+			template = ( ( tmp[ 0 ] && tmp[ 0 ].trim() ) ? tmp[ 0 ] : template );
+		}
+		else if ( more && typeof( more ) == 'string' )
+		{
+			var user_name = more.toLowerCase();
+			if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
+			{
+				var tuser = users[ user_name ];
+				if ( typeof( tuser.sentences ) !== 'undefined' && typeof( tuser.sentences[ type ] ) !== 'undefined' )
+				{
+					var tmp = tuser.sentences[ type ];
+					chat_enabled = ( ( typeof( tmp[ 1 ] ) !== 'undefined' ) ? tmp[ 1 ] : chat_enabled );
+					speech_enabled = ( ( typeof( tmp[ 2 ] ) !== 'undefined' ) ? tmp[ 2 ] : speech_enabled );
+					template = ( ( tmp[ 0 ] && tmp[ 0 ].trim() ) ? tmp[ 0 ] : template );
+				}
+			}
+		}
+
+		template = template.trim();
+		if ( ( mode & 0b001 ) == 0b001 && template.trim() == originals[ type ][ 2 ].trim() )
+			template = '';
+		if ( ( mode & 0b010 ) == 0b010 && sentences_enabled && template.trim() == sentences[ type ][ 2 ].trim() )
+			template = '';
+
 		return ( [ chat_enabled, speech_enabled, template ] );
 	}
 
+	/**
+	 * @desc Open the modal allowing to manage the sentences
+	 * @param	{HTMLElement}		button				Button that called this function
+	 * @param	{Object}			obj					Object containing the sentences
+	 * @param	{function}			[confirm_callback]	Call this function when the confirm or close button is pressed
+	 * @param	{function}			[reset_callback]	Call this function when the reset button is pressed
+	 */
+	function sentences_button( button, obj, confirm_callback, reset_callback )
+	{
+		var issentences = !obj;
+		obj = ( obj ? obj : sentences );
+
+		var all = {};
+		var data = {};
+		Object.keys( originals ).forEach( ( subkey, index ) => {
+			var sdata = sentence( ( issentences ? 0b000 : 0b100 ), subkey, obj );
+			var key = ( ( subkey.indexOf( '_' ) > 0 ) ? subkey.slice( 0, subkey.indexOf( '_' ) ) : subkey );
+
+			if ( key == subkey )
+				data[ key ] = { key: key, name: originals[ key ][ 0 ], list: [] };
+
+			data[ key ].list.push( {
+				subkey:				subkey,
+				subname:			originals[ subkey ][ 0 ],
+				input: {
+					value:			sdata[ 2 ],
+					placeholder:	sentence( 0b100, subkey, obj )[ 2 ]
+				},
+				small:				'<u>%s:</u> '.replace( '%s', language[ 2 ].sentences.variables ) + originals[ subkey ][ 1 ],
+				chat:				sdata[ 0 ],
+				speech:				sdata[ 1 ]
+			} );
+		} );
+
+		var imodal = modal( {
+			title:			language[ 2 ].voice.sentences.help,
+			html:			templates.sentences( { data: Object.values( data ) } ),
+			footer: {
+				input:		false,
+				close:		true,
+				confirm:	() => {
+					confirm_callback( imodal, all, true );
+				}
+			}
+		} );
+
+		imodal.addEventListener( 'hidden.bs.modal', () => {
+			confirm_callback( imodal, all, false );
+		}, false );
+
+		var body = imodal.querySelector( '.modal-body' );
+		Object.keys( originals ).forEach( ( subkey, index ) => {
+			var key = ( ( subkey.indexOf( '_' ) > 0 ) ? subkey.slice( 0, subkey.indexOf( '_' ) ) : subkey );
+
+			var input = body.querySelectorAll( 'input' )[ index ];
+			var chat_enabled = body.querySelectorAll( 'i.chat' )[ index ];
+			var speech_enabled = body.querySelectorAll( 'i.speech' )[ index ];
+
+			var switch_button = ( selem, on, off, force ) => {
+				var bool = [ 'false', 'true' ];
+				var value = ( selem.getAttribute( 'data-enabled' ) == 'true' );
+
+				value = ( force ? value : !value );
+				selem.setAttribute( 'data-enabled', bool[ value ? 1 : 0 ] );
+
+				selem.classList.toggle( on, value );
+				selem.classList.toggle( off, !value );
+			};
+
+			all[ subkey ] = [ chat_enabled, speech_enabled, input ];
+			chat_enabled.addEventListener( 'click', function() { switch_button( this, 'fa-comment-dots', 'fa-comment-slash' ); } );
+			speech_enabled.addEventListener( 'click', function() { switch_button( this, 'fa-volume-up', 'fa-volume-off' ); } );
+
+			switch_button( chat_enabled, 'fa-comment-dots', 'fa-comment-slash', true );
+			switch_button( speech_enabled, 'fa-volume-up', 'fa-volume-off', true );
+		} );
+
+		if ( reset_callback )
+		{
+			var reset = document.createElement( 'button' );
+			reset.className = 'btn btn-sm btn-danger';
+			reset.innerText = language[ 2 ].modals.sentences.reset.button;
+			reset.title = language[ 2 ].modals.sentences.reset.title;
+			reset.addEventListener( 'click', () => {
+				reset_callback( imodal )
+			} );
+		}
+
+		imodal.querySelector( '.modal-footer' ).prepend( reset );
+		new BSN.Tooltip( reset, { placement: ( reset.classList.contains( 'tip-left' ) ? 'left' : 'top' ), delay: 250 } );
+
+		Array.from( imodal.querySelectorAll( '.modal-body .nav-link' ) ).map( item => new BSN.Tab( item, { height: true } ) );
+	}
+
+	/**
+	 * @desc Open the modal allowing to manage the words
+	 * @param	{HTMLElement}		button				Button that called this function
+	 * @param	{Object}			obj					Object containing the words
+	 * @param	{function}			[confirm_callback]	Call this function when the confirm or close button is pressed
+	 * @param	{function}			[input_callback]	Call this function when the add button is pressed
+	 */
+	function words_button( button, obj, confirm_callback, input_callback )
+	{
+		var get_data = () => {
+			var data = { data: [] };
+			Object.keys( obj ).forEach( ( word ) => {
+				var value = obj[ word ];
+				data.data.push( { error: false, word: word, replace: value[ 1 ], mode: value[ 0 ] } );
+			} );
+
+			return ( Object.assign( data, language[ 2 ] ) );
+		};
+		var set_actions = ( imodal ) => {
+			imodal.querySelectorAll( 'tbody > tr' ).forEach( ( elem ) => {
+				var key = elem.querySelector( 'th' ).innerText;
+				var mode = () => {
+					var user = elem.querySelector( '.fa-user' ).classList.contains( 'enabled' );
+					var message = elem.querySelector( '.fa-comment-dots' ).classList.contains( 'enabled' );
+
+					return ( ( user && message ) ? 3 : ( message ? 2 : ( user ? 1 : 0 ) ) );
+				};
+
+				elem.querySelectorAll( '.fa-user, .fa-comment-dots' ).forEach( ( selem ) => {
+					selem.addEventListener( 'click', function() {
+						this.classList.toggle( 'enabled' );
+						obj[ key ][ 0 ] = mode();
+					} );
+				} );
+
+				elem.querySelector( '.fa-trash-alt' ).addEventListener( 'click', function() {
+					delete obj[ key ];
+					elem.remove();
+					update_button();
+				} );
+
+				elem.querySelector( 'input' ).addEventListener( 'change', function() {
+					obj[ key ] = [ mode(), this.value ];
+				} );
+			} );
+		};
+		var update_button = () => {
+			button.innerText = language[ 2 ].manage.variable.replace( '%s', Object.keys( obj ).length );
+		};
+
+		var imodal = modal( {
+			title:			language[ 2 ].voice.words.help,
+			html:			templates.words( get_data() ),
+			footer: {
+				input: {
+					icon:			'clone',
+					value:			'',
+					placeholder:	language[ 2 ].modals.words.input,
+					click:			( elem, cobj ) => {
+						var item = elem.value.trim().toLowerCase();
+						Object.keys( obj ).forEach( ( key ) => {
+							if ( item == key )
+								item = '';
+						} );
+						if ( !item )
+							return ;
+
+						obj[ item ] = [ 2, '' ];
+						imodal.querySelector( '.modal-body' ).innerHTML = templates.words( get_data() );
+						set_actions( imodal );
+
+						update_button();
+						if ( input_callback )
+							input_callback( imodal, obj, item );
+
+						elem.value = '';
+					}
+				},
+				close:		true,
+				confirm:	false
+			}
+		}, true );
+
+		imodal.addEventListener( 'hidden.bs.modal', () => {
+			confirm_callback( imodal, obj, false );
+		}, false );
+
+		set_actions( imodal );
+	}
+
+	/**
+	 * @desc Add a prefix to the message
+	 * @param	{string}			prefix				Targeted address
+	 * @param	{(string|Array)}	split_msg			Original message
+	 * @param	{string}			[separator]			Separator put after the prefix
+	 * @return	{(string|Object)}						Message with prefix
+	 */
 	function prechat( prefix, split_msg, separator )
 	{
 		if ( split_msg )
@@ -1166,6 +1600,15 @@ window.addEventListener( 'load', () => {
 		return ( split_msg );
 	}
 
+	/**
+	 * @desc Create an item to display in the chat
+	 * @param	{string}			user				Twitch username
+	 * @param	{string}			[message]			Message to display and say
+	 * @param	{Object}			[flags]				User-related flags
+	 * @param	{Object}			[extra]				Other information about the user and the process
+	 * @param	{bool}				[special]			If the message is not from a user
+	 * @return	{HTMLElement}							Item to add to a list
+	 */
 	function chat( user, message, flags, extra, special )
 	{
 		var dclass = [];
@@ -1186,7 +1629,7 @@ window.addEventListener( 'load', () => {
 		else
 			special = true;
 
-		message = ( ( special && [ 'undefined', 'boolean' ].indexOf( typeof( message ) ) >= 0 ) ? user : message );
+		message = ( ( special && typeof( message ) === 'undefined' ) ? user : message );
 		var dmessage = document.createElement( 'span' );
 		if ( Array.isArray( message ) )
 		{
@@ -1228,6 +1671,13 @@ window.addEventListener( 'load', () => {
 		return ( li );
 	}
 
+	/**
+	 * @desc Sends a message to the system to say it
+	 * @param	{string}			text				Message to read
+	 * @param	{Object}			[force]				Force the message to be read
+	 * @param	{string}			[user]				Twitch username
+	 * @param	{Object}			[flags]				User-related flags
+	 */
 	function speech( text, force, user, flags )
 	{
 		if ( !force )
@@ -1239,36 +1689,97 @@ window.addEventListener( 'load', () => {
 		if ( iascii.checked )
 			text = text.replace( /[^\040-\176\200-\377]/gi, '' );
 
-		msg.rate = ( parseInt( parseFloat( irate.value ) * 100 ) / 100 );
-		msg.pitch = ( parseInt( parseFloat( ipitch.value ) * 100 ) / 100 );
-		msg.volume = ( parseInt( parseFloat( ivolume.value ) * 100 ) / 100 );
-		msg.voice = voice[ 1 ];
+		var data = {
+			rate:		parseFloat( irate.value ),
+			pitch:		parseFloat( ipitch.value ),
+			volume:		parseFloat( ivolume.value ),
+			voice:		voice[ 1 ],
+			flooding:	parseInt( iflooding.value )
+		}
+
+		var user_name = ( user ? user.trim().toLowerCase() : false );
+		if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
+		{
+			var tuser = users[ user_name ];
+			Object.keys( data ).forEach( ( key ) => {
+				if ( typeof( tuser[ key ] ) === 'string' )
+				{
+					if ( key == 'voice' )
+					{
+						voices.forEach( ( item, index ) => {
+							var text = `[${item.lang}] ${item.name}`;
+							if ( tuser.voice == item.name )
+								data.voice = [ index, item ];
+						} );
+					}
+					else if ( !isNaN( parseFloat( tuser[ key ] ) ) )
+						data[ key ] = parseFloat( tuser[ key ] );
+					else if ( !isNaN( parseInt( tuser[ key ] ) ) )
+						data[ key ] = parseInt( tuser[ key ] );
+				}
+			} );
+		}
+
+		msg.rate = ( parseInt( data.rate * 100 ) / 100 );
+		msg.pitch = ( parseInt( data.pitch * 100 ) / 100 );
+		msg.volume = ( parseInt( data.volume * 100 ) / 100 );
+		msg.voice = data.voice;
 		msg.text = text;
 
-		var flooding = ( 100 - parseInt( iflooding.value ) );
+		var flooding = ( 100 - data.flooding );
 		if ( !msg.volume || ( user && flooding < 100 && FloodDetector.evaluate( text, flooding ) ) )
 			return ( inchat = false );
 
 		window.speechSynthesis.speak( msg );
 	}
 
+	/**
+	 * @desc Enables/Disables a chat option
+	 * @param	{string}			name				Name of the option
+	 */
 	function toggle( name )
 	{
 		var elem = dsettings.querySelector( `[name=${name}]` );
 		dchat.classList.toggle( name, elem.checked );
 	}
 
-	function limit( type, value )
+	/**
+	 * @desc Cuts a text if it exceeds the setting
+	 * @param	{string}			type				Type of text to process
+	 * @param	{string}			value				Text
+	 * @param	{string}			user_name			Twitch username
+	 * @return	{string}								Cut out text
+	 */
+	function limit( type, value, user_name )
 	{
+		var data = {
+			lusername:	ilusernames.value,
+			lmessage:	ilmessages.value
+		};
+
+		user_name = ( user_name ? user_name.toLowerCase() : false );
+		if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
+		{
+			var tuser = users[ user_name ];
+			data.lusername	= ( ( typeof( tuser.lusername ) !== 'undefined' ) ? tuser.lusername : data.lusername ),
+			data.lmessage	= ( ( typeof( tuser.lmessage ) !== 'undefined' ) ? tuser.lmessage : data.lmessage )
+		}
+
 		var max = 0;
 		if ( type == 'username' )
-			max = parseInt( ilusernames.value );
+			max = parseInt( data.lusername );
 		else if ( type == 'message' )
-			max = parseInt( ilmessages.value );
+			max = parseInt( data.lmessage );
 
 		return ( ( max > 0 ) ? value.substr( 0, max ) : value );
 	}
 
+	/**
+	 * @desc Replace words according to settings
+	 * @param	{string}			[user]				Twitch username
+	 * @param	{string}			[message]			Message
+	 * @return	{(string|Array)}						Processed items
+	 */
 	function replace( user, message )
 	{
 		var uuser = ( typeof( user ) !== 'undefined' );
@@ -1285,10 +1796,19 @@ window.addEventListener( 'load', () => {
 		return ( ( uuser && umessage ) ? [ user, message ] : ( umessage ? message : user ) );
 	}
 
+	/**
+	 * @desc Processes the special elements present in a message
+	 * @param	{string}			type				Type of sentence searched
+	 * @param	{string}			user				Twitch username
+	 * @param	{string}			[message]			Message to display and say
+	 * @param	{Object}			[flags]				User-related flags
+	 * @param	{Object}			[extra]				Other information about the user and the process
+	 * @return	{Array}									[ Template, User-related flags, Chat is on, split_msg, Speech is on, Sentence to speak ]
+	 */
 	function convert( type, user, message, flags, extra )
 	{
 		var cut = [];
-		var [ chat_enabled, speech_enabled, template ] = ( type ? sentence( type ) : [ true, true, type ] );
+		var [ chat_enabled, speech_enabled, template ] = ( type ? sentence( 0b100, type, user ) : [ true, true, type ] );
 
 		try
 		{
@@ -1312,12 +1832,15 @@ window.addEventListener( 'load', () => {
 			} );
 		} catch ( e ) {}
 
-		Object.keys( extra.messageEmotes || {} ).forEach( ( key ) => {
-			extra.messageEmotes[ key ].forEach( ( value ) => {
-				var pos = value.split( '-' );
-				cut.push( [ 'emote', key, parseInt( pos[ 0 ] ), parseInt( pos[ 1 ] ) + 1 ] );
+		if ( extra )
+		{
+			Object.keys( extra.messageEmotes || {} ).forEach( ( key ) => {
+				extra.messageEmotes[ key ].forEach( ( value ) => {
+					var pos = value.split( '-' );
+					cut.push( [ 'emote', key, parseInt( pos[ 0 ] ), parseInt( pos[ 1 ] ) + 1 ] );
+				} );
 			} );
-		} );
+		}
 
 		// Sort
 		cut.sort( ( a, b ) => { return ( b[ 2 ] - a[ 2 ] ); } );
@@ -1368,7 +1891,7 @@ window.addEventListener( 'load', () => {
 		} );
 		split_msg.unshift( document.createTextNode( last ) );
 
-		if ( flags )
+		if ( flags && extra )
 		{
 			flags.partner = ( ( extra.userBadges && typeof( extra.userBadges.partner ) !== 'undefined' && extra.userBadges.partner ) == '1' );
 			flags.premium = ( ( extra.userBadges && typeof( extra.userBadges.premium ) !== 'undefined' && extra.userBadges.premium ) == '1' );
@@ -1422,18 +1945,27 @@ window.addEventListener( 'load', () => {
 		{
 			var [ luser, lmessage ] = replace( user, speech_msg );
 			var text = template
-				.replace( /\$username\$/g, limit( 'username', luser ) )
-				.replace( /\$message\$/g, limit( 'message', lmessage ) );
+				.replace( /\$username\$/g, limit( 'username', luser, user ) )
+				.replace( /\$message\$/g, limit( 'message', lmessage, user ) );
+
+			var user_name = user.toLowerCase();
+			var repeat_value = parseInt( irepeat.value );
+			if ( typeof( users[ user_name ] ) !== 'undefined' && typeof( users[ user_name ].repeat ) !== 'undefined' )
+				repeat_value = parseInt( users[ user_name ].repeat );
 
 			if ( repeat[ 0 ] > 0 && repeat[ 1 ] == extra.userId )
 			{
+				if ( repeat[ 0 ] > repeat_value )
+					repeat[ 0 ] = repeat_value;
+
 				--repeat[ 0 ];
-				text = limit( 'message', lmessage );
+				text = limit( 'message', lmessage, user );
 			}
 			else
-				repeat = [ parseInt( irepeat.value ), extra.userId ]
+				repeat = [ repeat_value, extra.userId ]
 
-			speech( text, false, user, flags );
+			if ( text )
+				speech( text, false, user, flags );
 		}
 	}
 
@@ -1462,7 +1994,7 @@ window.addEventListener( 'load', () => {
 		{
 			var luser = replace( user );
 			speech( template
-				.replace( /\$username\$/g, limit( 'username', luser ) )
+				.replace( /\$username\$/g, limit( 'username', luser, user ) )
 				.replace( /\$reward\$/g, reward )
 				.replace( /\$cost\$/g, cost ), false, user, null );
 		}
@@ -1492,7 +2024,7 @@ window.addEventListener( 'load', () => {
 		if ( localStorage.getItem( 'debug' ) )
 			console.log( 'onHosted:', user, viewers, autohost, extra );
 
-		var [ chat_enabled, speech_enabled, template ] = sentence( 'hosted' );
+		var [ chat_enabled, speech_enabled, template ] = sentence( 0b100, 'hosted', user );
 
 		if ( chat_enabled )
 		{
@@ -1514,7 +2046,7 @@ window.addEventListener( 'load', () => {
 		if ( localStorage.getItem( 'debug' ) )
 			console.log( 'onRaid:', user, viewers, extra );
 
-		var [ chat_enabled, speech_enabled, template ] = sentence( 'raid' );
+		var [ chat_enabled, speech_enabled, template ] = sentence( 0b100, 'raid', user );
 
 		if ( chat_enabled )
 		{
@@ -1527,7 +2059,7 @@ window.addEventListener( 'load', () => {
 		{
 			var luser = replace( user );
 			speech( template
-				.replace( /\$username\$/g, limit( 'username', luser ) )
+				.replace( /\$username\$/g, limit( 'username', luser, user ) )
 				.replace( /\$viewers\$/g, viewers ) );
 		}
 	};
@@ -1549,8 +2081,8 @@ window.addEventListener( 'load', () => {
 		{
 			var [ luser, lmessage ] = replace( user, speech_msg );
 			speech( template
-				.replace( /\$username\$/g, limit( 'username', luser ) )
-				.replace( /\$message\$/g, limit( 'message', lmessage ) )
+				.replace( /\$username\$/g, limit( 'username', luser, user ) )
+				.replace( /\$message\$/g, limit( 'message', lmessage, user ) )
 				.replace( /\$bits\$/g, bits ), false, user, flags );
 		}
 	};
@@ -1568,8 +2100,8 @@ window.addEventListener( 'load', () => {
 		{
 			var [ luser, lmessage ] = replace( user, speech_msg );
 			speech( template
-				.replace( /\$username\$/g, limit( 'username', luser ) )
-				.replace( /\$message\$/g, limit( 'message', lmessage ) ) );
+				.replace( /\$username\$/g, limit( 'username', luser, user ) )
+				.replace( /\$message\$/g, limit( 'message', lmessage, user ) ) );
 		}
 	};
 
@@ -1586,8 +2118,8 @@ window.addEventListener( 'load', () => {
 		{
 			var [ luser, lmessage ] = replace( user, speech_msg );
 			speech( template
-				.replace( /\$username\$/g, limit( 'username', luser ) )
-				.replace( /\$message\$/g, limit( 'message', lmessage ) ) );
+				.replace( /\$username\$/g, limit( 'username', luser, user ) )
+				.replace( /\$message\$/g, limit( 'message', lmessage, user ) ) );
 		}
 	};
 
@@ -1595,7 +2127,7 @@ window.addEventListener( 'load', () => {
 		if ( localStorage.getItem( 'debug' ) )
 			console.log( 'onSubGift:', gifterUser, streakMonths, recipientUser, senderCount, subTierInfo, extra );
 
-		var [ chat_enabled, speech_enabled, template ] = sentence( 'gift' );
+		var [ chat_enabled, speech_enabled, template ] = sentence( 0b100, 'gift', gifterUser );
 
 		if ( chat_enabled )
 		{
@@ -1611,8 +2143,8 @@ window.addEventListener( 'load', () => {
 			var lgifter = replace( gifterUser );
 			var lrecipient = replace( recipientUser );
 			speech( template
-				.replace( /\$gifter\$/g, limit( 'username', lgifter ) )
-				.replace( /\$recipient\$/g, limit( 'username', lrecipient ) )
+				.replace( /\$gifter\$/g, limit( 'username', lgifter, gifterUser ) )
+				.replace( /\$recipient\$/g, limit( 'username', lrecipient, recipientUser ) )
 				.replace( /\$cumul\$/g, streakMonths )
 				.replace( /\$count\$/g, senderCount ) );
 		}
@@ -1622,12 +2154,12 @@ window.addEventListener( 'load', () => {
 		if ( localStorage.getItem( 'debug' ) )
 			console.log( 'onSubMysteryGift:', gifterUser, numbOfSubs, senderCount, subTierInfo, extra );
 
-		var [ chat_enabled, speech_enabled, template ] = sentence( 'gift_myst' );
+		var [ chat_enabled, speech_enabled, template ] = sentence( 0b100, 'gift_myst', user );
 
 		if ( chat_enabled )
 		{
 			chat( language[ 2 ].chat.gift_myst
-				.replace( /\$gifter\$/g, limit( 'username', gifterUser ) )
+				.replace( /\$gifter\$/g, gifterUser )
 				.replace( /\$subs\$/g, numbOfSubs )
 				.replace( /\$count\$/g, senderCount ) );
 		}
@@ -1636,7 +2168,7 @@ window.addEventListener( 'load', () => {
 		{
 			var luser = replace( gifterUser );
 			speech( template
-				.replace( /\$gifter\$/g, limit( 'username', luser ) )
+				.replace( /\$gifter\$/g, limit( 'username', luser, gifterUser ) )
 				.replace( /\$subs\$/g, numbOfSubs )
 				.replace( /\$count\$/g, senderCount ) );
 		}
@@ -1646,7 +2178,7 @@ window.addEventListener( 'load', () => {
 		if ( localStorage.getItem( 'debug' ) )
 			console.log( 'onGiftSubContinue:', user, sender, extra );
 
-		var [ chat_enabled, speech_enabled, template ] = sentence( 'gift_renew' );
+		var [ chat_enabled, speech_enabled, template ] = sentence( 0b100, 'gift_renew', user );
 
 		if ( chat_enabled )
 		{
@@ -1660,8 +2192,8 @@ window.addEventListener( 'load', () => {
 			var lsender = replace( sender );
 			var luser = replace( user );
 			speech( template
-				.replace( /\$gifter\$/g, lsender )
-				.replace( /\$recipient\$/g, luser ) );
+				.replace( /\$gifter\$/g, limit( 'username', lsender, sender ) )
+				.replace( /\$recipient\$/g, limit( 'username', luser, user ) ) );
 		}
 	};
 

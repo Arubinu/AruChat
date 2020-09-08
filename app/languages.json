@@ -29,6 +29,10 @@
 			"disconnect":		"Disconnect",
 			"more": {
 				"title":		"Activate rewards and more"
+			},
+			"audio": {
+				"title":		"Sounds",
+				"help":			"Warns of the start or end of a stream with a sound signal"
 			}
 		},
 		"users": {
@@ -37,11 +41,13 @@
 			"broadcaster":		"Broadcaster",
 			"moderators":		"Moderators",
 			"subscibers":		"Subscibers",
-			"excluded": {
-				"title":		"Excluded",
-				"help":			"Manage users to be excluded",
-				"delete":		"Click to delete"
-			}
+			"add":				"Add",
+			"search":			"User to search ...",
+			"manage": {
+				"title":		"User: %s",
+				"button":		"Manage"
+			},
+			"delete":			"Click to delete"
 		},
 		"voice": {
 			"title":			"Settings",
@@ -124,7 +130,7 @@
 			"disconnected":		"Disconnected from the $channel$ channel"
 		},
 		"iofile": {
-			"title":			"Import-Export",
+			"title":			"Configuration",
 			"importer": {
 				"title":		"Import configuration",
 				"help":			"",
@@ -134,6 +140,11 @@
 				"title":		"Export configuration",
 				"help":			"",
 				"button":		"Export"
+			},
+			"reset": {
+				"title":		"Reset configuration",
+				"help":			"",
+				"button":		"Reset"
 			}
 		},
 		"manage": {
@@ -164,8 +175,11 @@
 					"5":		"Enter the Token generated in the field above"
 				}
 			},
-			"excluded": {
-				"input":		"Enter the username to be excluded (click on it to remove it)"
+			"users": {
+				"reset": {
+					"title":	"Reset all these settings",
+					"button":	"Reset"
+				}
 			},
 			"sentences": {
 				"reset": {
@@ -236,6 +250,10 @@
 			"disconnect":		"Déconnecter",
 			"more": {
 				"title":		"Activez les récompenses et plus"
+			},
+			"audio": {
+				"title":		"Sons",
+				"help":			"Prévient d'un début ou d'une fin de stream via un signal sonore"
 			}
 		},
 		"users": {
@@ -244,11 +262,13 @@
 			"broadcaster":		"Diffuseur",
 			"moderators":		"Moderateurs",
 			"subscibers":		"Abonnés",
-			"excluded": {
-				"title":		"Exclus",
-				"help":			"Gérer les utilisateurs à exclure",
-				"delete":		"Cliquez pour supprimer"
-			}
+			"add":				"Ajouter",
+			"search":			"Utilisateur à chercher ...",
+			"manage": {
+				"title":		"Utilisateur: %s",
+				"button":		"Gérer"
+			},
+			"delete":			"Cliquez pour supprimer"
 		},
 		"voice": {
 			"title":			"Réglages",
@@ -334,7 +354,7 @@
 			"disconnected":		"Déconnecté de la chaîne $channel$"
 		},
 		"iofile": {
-			"title":			"Importer-Exporter",
+			"title":			"Configuration",
 			"importer": {
 				"title":		"Importer la configuration",
 				"help":			"",
@@ -344,6 +364,11 @@
 				"title":		"Exporter la configuration",
 				"help":			"",
 				"button":		"Exporter"
+			},
+			"reset": {
+				"title":		"Remise à zéro",
+				"help":			"",
+				"button":		"Réinitialiser"
 			}
 		},
 		"manage": {
@@ -374,8 +399,11 @@
 					"5":		"Entrez le jeton généré dans le champ ci-dessus"
 				}
 			},
-			"excluded": {
-				"input":		"Entrez un utilisateur à exclure (cliquez dessus pour le supprimer)"
+			"users": {
+				"reset": {
+					"title":	"Réinitialisez tous ces paramètres",
+					"button":	"Réinitialisez"
+				}
 			},
 			"sentences": {
 				"reset": {

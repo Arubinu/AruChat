@@ -110,6 +110,14 @@ function createWindow()
 		` );
 	} );
 
+	win.webContents.on( 'new-window', ( event, url ) => {
+		if ( url.indexOf( '://www.twitch.tv/' ) >= 0 )
+		{
+			event.preventDefault();
+			shell.openExternal( url );
+		}
+	} );
+
 	// Window closed
 	win.on( 'close', ( event ) => {
 		config.set( 'fullscreen', win.isFullScreen() );

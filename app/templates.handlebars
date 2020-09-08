@@ -125,8 +125,8 @@
 				{{# each list }}
 				<div class="form-group">
 					<input type="text" value="{{ input.value }}" placeholder="{{ input.placeholder }}" class="form-control left-input" />
-					<i class="chat fas fa-comment-dots"></i>
-					<i class="speech fas fa-volume-up"></i>
+					<i class="chat fas fa-comment-dots" data-enabled="{{ or ( and chat 'true' ) 'false' }}"></i>
+					<i class="speech fas fa-volume-up" data-enabled="{{ or ( and speech 'true' ) 'false' }}"></i>
 					<small class="form-text text-muted">{{{ small }}}</small>
 				</div>
 				{{/ each }}
@@ -195,6 +195,167 @@
 	</div>
 </template>
 
+<template id="user">
+	<li data-user="{{ data.name }}">
+		<div class="title" title="{{ data.name }}">{{ data.name }}</div>
+		<div class="value">
+			<i class="fas fa-cog" title="{{ users.manage.button }}"></i>
+			<i class="fas fa-trash-alt" title="{{ users.delete }}"></i>
+		</div>
+	</li>
+</template>
+
+<template id="user_settings">
+	<ul class="voice">
+		<li>
+			<div class="title">
+				<label class="form-check-label">
+					<input name="voice" class="form-check-input" type="checkbox"{{ or ( and data.voice ' checked' ) '' }} />
+					{{ voice.voice.title }}
+				</label>
+			</div>
+			<div class="value">
+				<div name="voice" class="btn-group dropleft" title=" ">
+					<button type="button" class="btn btn-sm btn-primary">{{ voice.voice.button }}</button>
+					<div class="btn-group" role="group">
+						<button id="voice_user" type="button" class="btn btn-sm btn-primary dropdown-toggle"></button>
+						<div class="dropdown-menu" aria-labelledby="voice_user"></div>
+					</div>
+				</div>
+			</div>
+		</li>
+		<li>
+			<div class="title">
+				<label class="form-check-label">
+					<input name="rate" class="form-check-input" type="checkbox"{{ or ( and data.rate ' checked' ) '' }} />
+					{{ voice.rate }}
+				</label>
+			</div>
+			<div class="value"><input name="rate" type="number" class="form-control form-control-sm" min=".1" max="10" step=".1" value="{{ or data.rate '1' }}" /></div>
+		</li>
+		<li>
+			<div class="title">
+				<label class="form-check-label">
+					<input name="pitch" class="form-check-input" type="checkbox"{{ or ( and data.pitch ' checked' ) '' }} />
+					{{ voice.pitch }}
+				</label>
+			</div>
+			<div class="value"><input name="pitch" type="number" class="form-control form-control-sm" min="0" max="2" step=".1" value="{{ or data.pitch '0.8' }}" /></div>
+		</li>
+		<li>
+			<div class="title">
+				<label class="form-check-label">
+					<input name="volume" class="form-check-input" type="checkbox"{{ or ( and data.volume ' checked' ) '' }} />
+					{{ voice.volume.title }}
+				</label>
+			</div>
+			<div class="value"><i class="fas fa-volume-mute"></i><input name="volume" type="range" class="custom-range" min="0" max="1" step=".01" value="{{ or data.volume '0.5' }}" title=" " /></div>
+		</li>
+		<li>
+			<hr />
+		</li>
+		<li>
+			<div class="title tip-left" title="{{ voice.sentences.help }}">
+				<label class="form-check-label">
+					<input name="sentences" class="form-check-input" type="checkbox"{{ or ( and data.sentences ' checked' ) '' }} />
+					{{ voice.sentences.title }}
+				</label>
+			</div>
+			<div class="value"><button name="sentences" type="button" class="btn btn-sm btn-primary">{{ manage.normal }}</button></div>
+		</li>
+		<li>
+			<div class="title tip-left" title="{{ voice.words.help }}">
+				<label class="form-check-label">
+					<input name="words" class="form-check-input" type="checkbox"{{ or ( and data.words ' checked' ) '' }} />
+					{{ voice.words.title }}
+				</label>
+			</div>
+			<div class="value"><button name="words" type="button" class="btn btn-sm btn-primary">{{ manage.normal }}</button></div>
+		</li>
+		<li>
+			<hr />
+		</li>
+		<li>
+			<div class="title tip-left" title="{{ voice.links.help }}">
+				<label class="form-check-label">
+					<input name="links" class="form-check-input" type="checkbox"{{ or ( and ( not-eq ( type data.links ) 'undefined' ) ' checked' ) '' }} />
+					{{ voice.links.title }}
+				</label>
+			</div>
+			<div class="value">
+				<div class="custom-control custom-switch">
+					<input name="links" type="checkbox" class="custom-control-input" id="links_user"{{ or ( and ( or data.links ( eq ( type data.links ) 'undefined' ) ) ' checked' ) '' }} />
+					<label class="custom-control-label" for="links_user"></label>
+				</div>
+			</div>
+		</li>
+		<li>
+			<div class="title tip-left" title="{{ voice.emotes.help }}">
+				<label class="form-check-label">
+					<input name="emotes" class="form-check-input" type="checkbox"{{ or ( and ( not-eq ( type data.emotes ) 'undefined' ) ' checked' ) '' }} />
+					{{ voice.emotes.title }}
+				</label>
+			</div>
+			<div class="value">
+				<div class="custom-control custom-switch">
+					<input name="emotes" type="checkbox" class="custom-control-input" id="emotes_user"{{ or ( and ( or data.emotes ( eq ( type data.emotes ) 'undefined' ) ) ' checked' ) '' }} />
+					<label class="custom-control-label" for="emotes_user"></label>
+				</div>
+			</div>
+		</li>
+		<li>
+			<div class="title tip-left" title="{{ voice.ascii.help }}">
+				<label class="form-check-label">
+					<input name="ascii" class="form-check-input" type="checkbox"{{ or ( and ( not-eq ( type data.ascii ) 'undefined' ) ' checked' ) '' }} />
+					{{ voice.ascii.title }}
+				</label>
+			</div>
+			<div class="value">
+				<div class="custom-control custom-switch">
+					<input name="ascii" type="checkbox" class="custom-control-input" id="ascii_user"{{ or ( and ( or data.ascii ( eq ( type data.ascii ) 'undefined' ) ) ' checked' ) '' }} />
+					<label class="custom-control-label" for="ascii_user"></label>
+				</div>
+			</div>
+		</li>
+		<li>
+			<div class="title tip-left" title="{{ voice.limit.usernames.help }}">
+				<label class="form-check-label">
+					<input name="lusername" class="form-check-input" type="checkbox"{{ or ( and data.lusername ' checked' ) '' }} />
+					{{ voice.limit.usernames.title }}
+				</label>
+			</div>
+			<div class="value"><input name="lusername" type="number" class="form-control form-control-sm" min="0" max="25" step="1" value="{{ or data.lusername '0' }}" title=" " /></div>
+		</li>
+		<li>
+			<div class="title tip-left" title="{{ voice.limit.messages.help }}">
+				<label class="form-check-label">
+					<input name="lmessage" class="form-check-input" type="checkbox"{{ or ( and data.lmessage ' checked' ) '' }} />
+					{{ voice.limit.messages.title }}
+				</label>
+			</div>
+			<div class="value"><input name="lmessage" type="number" class="form-control form-control-sm" min="0" max="500" step="1" value="{{ or data.lmessage '0' }}" title=" " /></div>
+		</li>
+		<li>
+			<div class="title tip-left" title="{{ voice.repeat.help }}">
+				<label class="form-check-label">
+					<input name="repeat" class="form-check-input" type="checkbox"{{ or ( and data.repeat ' checked' ) '' }} />
+					{{ voice.repeat.title }}
+				</label>
+			</div>
+			<div class="value"><input name="repeat" type="number" class="form-control form-control-sm" min="0" max="1000" step="1" value="{{ or data.repeat '1000' }}" title=" " /></div>
+		</li>
+		<li>
+			<div class="title tip-left" title="{{ voice.flooding.help }}">
+				<label class="form-check-label">
+					<input name="flooding" class="form-check-input" type="checkbox"{{ or ( and data.flooding ' checked' ) '' }} />
+					{{ voice.flooding.title }}
+				</label>
+			</div>
+			<div class="value"><i class="fas fa-ban"></i><input name="flooding" type="range" class="custom-range" min="0" max="100" step="1" value="{{ or data.flooding '0' }}" title=" " /></div>
+		</li>
+	</ul>
+</template>
+
 <template id="settings">
 	<div id="settings" class="text-center">
 		<ul class="menu">
@@ -212,12 +373,21 @@
 					<input name="channel" type="text" class="form-control form-control-sm" />
 				</div>
 			</li>
+			<li>
+				<div class="title tip-left" title="{{ connection.audio.help }}">{{ connection.audio.title }}</div>
+				<div class="value">
+					<div class="custom-control custom-switch">
+						<input name="audio" type="checkbox" class="custom-control-input" id="audio" checked />
+						<label class="custom-control-label" for="audio"></label>
+					</div>
+				</div>
+			</li>
 			<li class="separator">
 				<button name="connect" type="button" class="btn btn-sm btn-primary">{{ connection.connect }}</button>
 				<button name="disconnect" type="button" class="btn btn-sm btn-primary" disabled>{{ connection.disconnect }}</button>
 			</li>
 		</ul>
-		<ul class="users">
+		<ul class="users clear">
 			<li>
 				<div class="btn-group">
 					<div class="form-check">
@@ -247,8 +417,11 @@
 				</div>
 			</li>
 			<li>
-				<div class="title">{{ users.excluded.title }}</div>
-				<div class="value"><button name="excluded" type="button" class="btn btn-sm btn-primary" title="{{ users.excluded.help }}">{{ manage.normal }}</button></div>
+				<div class="title"><input name="user" type="text" class="btn btn-sm btn-primary" placeholder="{{ users.search }}" /></div>
+				<div class="value"><i class="fas fa-user-plus" title="{{ users.add }}"></i></div>
+			</li>
+			<li>
+				<hr />
 			</li>
 		</ul>
 		<ul class="voice">
@@ -270,28 +443,28 @@
 			</li>
 			<li>
 				<div class="title">{{ voice.pitch }}</div>
-				<div class="value"><input name="pitch" type="number" class="form-control form-control-sm" value=".8" min="0" max="2" step=".1" /></div>
+				<div class="value"><input name="pitch" type="number" class="form-control form-control-sm" value="0.8" min="0" max="2" step=".1" /></div>
 			</li>
 			<li>
 				<div class="title">{{ voice.volume.title }}</div>
-				<div class="value"><i class="fas fa-volume-mute"></i><input name="volume" type="range" class="custom-range" min="0" max="1" step=".01" title=" " /></div>
+				<div class="value"><i class="fas fa-volume-mute"></i><input name="volume" type="range" class="custom-range" value="0.5" min="0" max="1" step=".01" title=" " /></div>
 			</li>
 			<li>
 				<hr />
 			</li>
 			<li>
-				<div class="title" title="{{ voice.sentences.help }}">{{ voice.sentences.title }}</div>
-				<div class="value"><button name="sentences" type="button" class="btn btn-sm btn-primary" title="{{ voice.sentences.help }}">{{ manage.normal }}</button></div>
+				<div class="title tip-left" title="{{ voice.sentences.help }}">{{ voice.sentences.title }}</div>
+				<div class="value"><button name="sentences" type="button" class="btn btn-sm btn-primary">{{ manage.normal }}</button></div>
 			</li>
 			<li>
-				<div class="title" title="{{ voice.words.help }}">{{ voice.words.title }}</div>
-				<div class="value"><button name="words" type="button" class="btn btn-sm btn-primary" title="{{ voice.words.help }}">{{ manage.normal }}</button></div>
+				<div class="title tip-left" title="{{ voice.words.help }}">{{ voice.words.title }}</div>
+				<div class="value"><button name="words" type="button" class="btn btn-sm btn-primary">{{ manage.normal }}</button></div>
 			</li>
 			<li>
 				<hr />
 			</li>
 			<li>
-				<div class="title" title="{{ voice.links.help }}">{{ voice.links.title }}</div>
+				<div class="title tip-left" title="{{ voice.links.help }}">{{ voice.links.title }}</div>
 				<div class="value">
 					<div class="custom-control custom-switch">
 						<input name="links" type="checkbox" class="custom-control-input" id="links" checked />
@@ -300,7 +473,7 @@
 				</div>
 			</li>
 			<li>
-				<div class="title" title="{{ voice.emotes.help }}">{{ voice.emotes.title }}</div>
+				<div class="title tip-left" title="{{ voice.emotes.help }}">{{ voice.emotes.title }}</div>
 				<div class="value">
 					<div class="custom-control custom-switch">
 						<input name="emotes" type="checkbox" class="custom-control-input" id="emotes" checked />
@@ -309,7 +482,7 @@
 				</div>
 			</li>
 			<li>
-				<div class="title" title="{{ voice.ascii.help }}">{{ voice.ascii.title }}</div>
+				<div class="title tip-left" title="{{ voice.ascii.help }}">{{ voice.ascii.title }}</div>
 				<div class="value">
 					<div class="custom-control custom-switch">
 						<input name="ascii" type="checkbox" class="custom-control-input" id="ascii" checked />
@@ -318,19 +491,19 @@
 				</div>
 			</li>
 			<li>
-				<div class="title" title="{{ voice.limit.usernames.help }}">{{ voice.limit.usernames.title }}</div>
+				<div class="title tip-left" title="{{ voice.limit.usernames.help }}">{{ voice.limit.usernames.title }}</div>
 				<div class="value"><input name="lusernames" type="number" class="form-control form-control-sm" value="0" min="0" max="25" step="1" title=" " /></div>
 			</li>
 			<li>
-				<div class="title" title="{{ voice.limit.messages.help }}">{{ voice.limit.messages.title }}</div>
+				<div class="title tip-left" title="{{ voice.limit.messages.help }}">{{ voice.limit.messages.title }}</div>
 				<div class="value"><input name="lmessages" type="number" class="form-control form-control-sm" value="0" min="0" max="500" step="1" title=" " /></div>
 			</li>
 			<li>
-				<div class="title" title="{{ voice.repeat.help }}">{{ voice.repeat.title }}</div>
+				<div class="title tip-left" title="{{ voice.repeat.help }}">{{ voice.repeat.title }}</div>
 				<div class="value"><input name="repeat" type="number" class="form-control form-control-sm" value="1000" min="0" max="1000" step="1" title=" " /></div>
 			</li>
 			<li>
-				<div class="title" title="{{ voice.flooding.help }}">{{ voice.flooding.title }}</div>
+				<div class="title tip-left" title="{{ voice.flooding.help }}">{{ voice.flooding.title }}</div>
 				<div class="value"><i class="fas fa-ban"></i><input name="flooding" type="range" class="custom-range" min="0" max="100" step="1" title=" " /></div>
 			</li>
 			<li class="separator">
@@ -339,7 +512,7 @@
 		</ul>
 		<ul class="chat">
 			<li>
-				<div class="title" title="{{ chat.timestamp.help }}">{{ chat.timestamp.title }}</div>
+				<div class="title tip-left" title="{{ chat.timestamp.help }}">{{ chat.timestamp.title }}</div>
 				<div class="value">
 					<div class="custom-control custom-switch">
 						<input name="timestamp" type="checkbox" class="custom-control-input" id="timestamp" />
@@ -348,7 +521,7 @@
 				</div>
 			</li>
 			<li>
-				<div class="title" title="{{ chat.autoscroll.help }}">{{ chat.autoscroll.title }}</div>
+				<div class="title tip-left" title="{{ chat.autoscroll.help }}">{{ chat.autoscroll.title }}</div>
 				<div class="value">
 					<div class="custom-control custom-switch">
 						<input name="autoscroll" type="checkbox" class="custom-control-input" id="autoscroll" />
@@ -359,15 +532,21 @@
 		</ul>
 		<ul class="iofile">
 			<li>
-				<div class="title" title="{{ iofile.importer.help }}">{{ iofile.importer.title }}</div>
+				<div class="title tip-left" title="{{ iofile.importer.help }}">{{ iofile.importer.title }}</div>
 				<div class="value">
 					<button name="import" type="button" class="btn btn-sm btn-primary">{{ iofile.importer.button }}</button>
 				</div>
 			</li>
 			<li>
-				<div class="title" title="{{ iofile.exporter.help }}">{{ iofile.exporter.title }}</div>
+				<div class="title tip-left" title="{{ iofile.exporter.help }}">{{ iofile.exporter.title }}</div>
 				<div class="value">
 					<button name="export" type="button" class="btn btn-sm btn-primary">{{ iofile.exporter.button }}</button>
+				</div>
+			</li>
+			<li>
+				<div class="title tip-left" title="{{ iofile.reset.help }}">{{ iofile.reset.title }}</div>
+				<div class="value">
+					<button name="reset" type="button" class="btn btn-sm btn-primary">{{ iofile.reset.button }}</button>
 				</div>
 			</li>
 		</ul>

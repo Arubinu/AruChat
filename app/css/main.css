@@ -89,12 +89,23 @@ input[type=number] {
 	background-color: rgb( 47, 53, 66 ) !important;
 	border-color: rgb( 47, 53, 66 ) !important;
 }
+button:not(.btn-secondary):not(.btn-success):not(.btn-info):not(.btn-warning):not(.btn-danger):not(.btn-link):not(.close):not(.page-link):disabled,
+.form-control:disabled,
+.page-item.active .page-link:disabled,
+input[type=text]:disabled,
+input[type=number]:disabled {
+	background: repeating-linear-gradient( 45deg, rgba( 50, 50, 50, .05 ), rgba( 50, 50, 50, 0.05 ) 1px, rgb( 47, 53, 66 ) 2px, rgb( 47, 53, 66 ) 10px ) !important;
+}
 .page-item .page-link {
 	border-color: rgb( 47, 53, 66 ) !important;
 }
 input[type=range]::-webkit-slider-thumb,
 input[type=range]::-webkit-slider-runnable-track {
 	background-color: rgb( 47, 53, 66 ) !important;
+}
+input[type=range]:disabled::-webkit-slider-thumb,
+input[type=range]:disabled::-webkit-slider-runnable-track {
+	background: repeating-linear-gradient( 45deg, rgba( 50, 50, 50, .05 ), rgba( 50, 50, 50, 0.05 ) 1px, rgb( 47, 53, 66 ) 2px, rgb( 47, 53, 66 ) 10px ) !important;
 }
 .custom-control-label::before,
 input[type=checkbox]::before {
@@ -105,6 +116,13 @@ input[type=checkbox]::before {
 }
 .custom-control-input:checked ~ .custom-control-label::before {
 	background-color: rgb( 47, 53, 66 ) !important;
+}
+.custom-control-input:disabled ~ .custom-control-label::before {
+	background: repeating-linear-gradient( 45deg, rgba( 50, 50, 50, .05 ), rgba( 50, 50, 50, 0.05 ) 1px, rgb( 47, 53, 66 ) 2px, rgb( 47, 53, 66 ) 10px ) !important;
+}
+.custom-control-input:disabled ~ .custom-control-label::after,
+.custom-control-input:disabled ~ .custom-control-label::before {
+	cursor: not-allowed !important;
 }
 input.input-transparent {
 	margin: 0px;
@@ -121,6 +139,11 @@ button[disabled] {
 
 .clear {
 	clear: both;
+}
+
+.fas.disabled {
+	color: #666;
+	cursor: not-allowed !important;
 }
 
 .toast {
@@ -321,6 +344,12 @@ img.navbar-brand {
 	border-bottom: none !important;
 }
 
+.dropdown-menu {
+	overflow-y: scroll;
+	max-height: 237px;
+	background-clip: initial;
+}
+
 .dropdown-item {
 	padding: 0.05rem 1.5rem;
 	font-size: 14px;
@@ -414,10 +443,12 @@ img.navbar-brand {
 	height: calc( 100% - 51px );
 	transition: width 500ms, right 500ms;
 }
+.modal-body > ul,
 #chat > ul,
 #settings > ul {
 	padding-left: 0px;
 }
+.modal-body > ul > li,
 #chat > ul > li,
 #settings > ul > li {
 	clear: both;
@@ -442,6 +473,7 @@ img.navbar-brand {
 	background-color: rgba( 0, 0, 0, .2 );
 	border-color: rgba( 0, 0, 0, .6 );
 }
+.modal-body .separator,
 #chat .separator,
 #settings .separator {
 	padding-top: 10px;
@@ -566,28 +598,58 @@ img.navbar-brand {
 	position: absolute;
 	right: 20px;
 }
+.modal-body > ul > li .fas,
 #settings .fas {
 	font-size: 24px;
 }
+.modal-body hr,
 #settings hr {
 	margin-top: 45px;
 	margin-bottom: 12px;
 	width: 70%;
 }
+.modal-body hr.first,
+#settings hr.first {
+	margin-top: 12px;
+}
+.modal-body > h3,
 #settings > h3 {
 	cursor: default;
 }
+.modal-body > ul > li,
 #settings > ul > li {
 	line-height: 33px;
 }
+.modal-body > ul > li > .title,
 #settings > ul > li > .title {
 	float: left;
 	cursor: default;
 }
+.modal-body > ul > li > .title > input,
+#settings > ul > li > .title > input {
+	width: 245px;
+	cursor: text;
+}
+.modal-body > ul > li > .title input[type=checkbox],
+#settings > ul > li > .title input[type=checkbox] {
+	margin-bottom: 0px !important;
+}
+#settings > ul.users > li[data-user] > .title {
+	overflow: hidden;
+	width: calc( 100% - 50px );
+	text-align: left;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	user-select: none;
+}
+.modal-body > ul > li > .value,
 #settings > ul > li > .value {
 	float: right;
 	position: relative;
 }
+.modal-body > ul > li > .value > input,
+.modal-body > ul > li > .value > button,
+.modal-body > ul > li > .value > .btn-group,
 #settings > ul > li > .value > input,
 #settings > ul > li > .value > button,
 #settings > ul > li > .value > .btn-group {
@@ -597,13 +659,17 @@ img.navbar-brand {
 	height: 29px;
 	text-align: right !important;
 }
+.modal-body > ul > li > .value > input,
 #settings > ul > li > .value > input {
 	direction: rtl;
 }
+.modal-body > ul > li > .value > input[type=text],
+.modal-body > ul > li > .value > input[type=range],
 #settings > ul > li > .value > input[type=text],
 #settings > ul > li > .value > input[type=range] {
 	direction: initial;
 }
+.modal-body > ul > li > .value button,
 #settings > ul > li > .value button {
 	overflow: hidden;
 	min-width: initial;
@@ -611,22 +677,32 @@ img.navbar-brand {
 	text-overflow: ellipsis;
 	white-space: nowrap;
 }
-#settings > ul > li > .value > .fas {
+.modal-body > ul > li > .value > .fas,
+#settings > ul:not(.users) > li > .value > .fas {
 	position: absolute;
 	top: 5px;
 	left: -30px;
 	cursor: pointer;
 }
+#settings > ul.users > li > .value > .fas {
+	font-size: 22px;
+	vertical-align: -4px;
+	cursor: pointer;
+}
+.modal-body > ul > li > .value > .btn-group,
 #settings > ul > li > .value > .btn-group {
 	padding-right: 0px;
 	min-width: 155px;
 }
+.modal-body > ul > li > .value > .btn-group > button,
 #settings > ul > li > .value > .btn-group > button {
 	max-width: 125px;
 }
+.modal-body > ul > li > .btn-group > .form-check,
 #settings > ul > li > .btn-group > .form-check {
 	padding-left: .75rem;
 }
+.modal-body > ul > li > .btn-group > .form-check:first-child,
 #settings > ul > li > .btn-group > .form-check:first-child {
 	padding-left: initial;
 }
