@@ -836,7 +836,7 @@ window.addEventListener( 'load', () => {
 					return ;
 
 				var [ text, user, flags ] = line.shift();
-				if ( user && flags )
+				if ( user && typeof( users[ user.toLowerCase() ] ) === 'undefined' && flags )
 				{
 					var mod = ( flags.mod && !umod.checked );
 					var subscriber = ( flags.subscriber && !usubscriber.checked );
@@ -1146,7 +1146,7 @@ window.addEventListener( 'load', () => {
 							users[ user_name ][ input_name ] = ( input_checked ? elem[ elem.matches( '[type=checkbox]' ) ? 'checked' : 'value' ] : undefined );
 						} );
 
-						users[ user_name ].voice = ( voice_user ? ( voice_user[ 1 ].lang + '|' + voice_user[ 1 ].name ) : undefined );
+						users[ user_name ].voice = ( ( body.querySelector( '.title input[name=voice][type=checkbox]' ).checked && voice_user && voice_user[ 1 ] ) ? ( voice_user[ 1 ].lang + '|' + voice_user[ 1 ].name ) : undefined );
 						users[ user_name ].sentences = ( body.querySelector( '.title input[name=sentences][type=checkbox]' ).checked ? data.sentences : undefined );
 						users[ user_name ].words = ( body.querySelector( '.title input[name=words][type=checkbox]' ).checked ? data.words : undefined );
 					}
@@ -1261,7 +1261,7 @@ window.addEventListener( 'load', () => {
 					data.words = obj;
 				} );
 			} );
-			body.querySelector( 'button[name=words]' ).innerText = language[ 2 ].manage.variable.replace( '%s', Object.keys( data.words ).length );
+			body.querySelector( 'button[name=words]' ).innerText = language[ 2 ].manage.variable.replace( '%s', Object.keys( data.words || {} ).length );
 
 			var uivolume = body.querySelector( '.value input[name=volume]' );
 			var uilusername = body.querySelector( '.value input[name=lusername]' );
@@ -1686,14 +1686,12 @@ window.addEventListener( 'load', () => {
 			return ;
 
 		inchat = true;
-		if ( iascii.checked )
-			text = text.replace( /[^\040-\176\200-\377]/gi, '' );
-
 		var data = {
 			rate:		parseFloat( irate.value ),
 			pitch:		parseFloat( ipitch.value ),
 			volume:		parseFloat( ivolume.value ),
-			voice:		voice[ 1 ],
+			voice:		voice,
+			ascii:		iascii.checked,
 			flooding:	parseInt( iflooding.value )
 		}
 
@@ -1702,13 +1700,13 @@ window.addEventListener( 'load', () => {
 		{
 			var tuser = users[ user_name ];
 			Object.keys( data ).forEach( ( key ) => {
-				if ( typeof( tuser[ key ] ) === 'string' )
+				var type = typeof( tuser[ key ] );
+				if ( type === 'string' )
 				{
 					if ( key == 'voice' )
 					{
 						voices.forEach( ( item, index ) => {
-							var text = `[${item.lang}] ${item.name}`;
-							if ( tuser.voice == item.name )
+							if ( tuser.voice == `${item.lang}|${item.name}` )
 								data.voice = [ index, item ];
 						} );
 					}
@@ -1717,13 +1715,18 @@ window.addEventListener( 'load', () => {
 					else if ( !isNaN( parseInt( tuser[ key ] ) ) )
 						data[ key ] = parseInt( tuser[ key ] );
 				}
+				else if ( type !== 'undefined' )
+					data[ key ] = tuser[ key ];
 			} );
 		}
+
+		if ( data.ascii )
+			text = text.replace( /[^\040-\176\200-\377]/gi, '' );
 
 		msg.rate = ( parseInt( data.rate * 100 ) / 100 );
 		msg.pitch = ( parseInt( data.pitch * 100 ) / 100 );
 		msg.volume = ( parseInt( data.volume * 100 ) / 100 );
-		msg.voice = data.voice;
+		msg.voice = data.voice[ 1 ];
 		msg.text = text;
 
 		var flooding = ( 100 - data.flooding );
@@ -1785,12 +1788,22 @@ window.addEventListener( 'load', () => {
 		var uuser = ( typeof( user ) !== 'undefined' );
 		var umessage = ( typeof( message ) !== 'undefined' );
 
-		Object.keys( words ).forEach( ( word ) => {
-			var [ mode, replacement ] = words[ word ];
+		user = ( uuser ? user.toLowerCase() : user );
+		message = ( umessage ? message.toLowerCase() : message );
+
+		var tuser = null;
+		var user_name = ( user && user.toLowerCase() );
+		if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
+			tuser = users[ user_name ];
+
+		var uwords = ( tuser && typeof( tuser.words ) !== 'undefined' );
+		var twords = ( ( !uwords && words ) || ( uwords && tuser.words ) );
+		Object.keys( twords ).forEach( ( word ) => {
+			var [ mode, replacement ] = twords[ word ];
 			if ( ( mode == 1 || mode == 3 ) && uuser )
-				user = user.split( word ).join( replacement );
+				user = user.split( word.toLowerCase() ).join( replacement.toLowerCase() );
 			if ( ( mode == 2 || mode == 3 ) && umessage )
-				message = message.split( word ).join( replacement );
+				message = message.split( word.toLowerCase() ).join( replacement.toLowerCase() );
 		} );
 
 		return ( ( uuser && umessage ) ? [ user, message ] : ( umessage ? message : user ) );
@@ -1809,6 +1822,11 @@ window.addEventListener( 'load', () => {
 	{
 		var cut = [];
 		var [ chat_enabled, speech_enabled, template ] = ( type ? sentence( 0b100, type, user ) : [ true, true, type ] );
+
+		var tuser = null;
+		var user_name = ( user && user.toLowerCase() );
+		if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
+			tuser = users[ user_name ];
 
 		try
 		{
@@ -1865,7 +1883,8 @@ window.addEventListener( 'load', () => {
 				elem.href = text;
 				elem.innerText = text;
 
-				if ( !ilinks.checked )
+				var ulinks = ( tuser && typeof( tuser.links ) !== 'undefined' );
+				if ( ( !ulinks && !ilinks.checked ) || ( ulinks && !tuser.links ) )
 					speech_msg = speech_msg.slice( 0, item[ 2 ] ) + speech_msg.slice( item[ 3 ] );
 			}
 			else if ( item[ 0 ] == 'emote' )
@@ -1875,7 +1894,8 @@ window.addEventListener( 'load', () => {
 				elem.alt = text;
 				elem.title = text;
 
-				if ( !iemotes.checked )
+				var uemotes = ( tuser && typeof( tuser.emotes ) !== 'undefined' );
+				if ( ( !uemotes && !iemotes.checked ) || ( uemotes && !tuser.emotes ) )
 					speech_msg = speech_msg.slice( 0, item[ 2 ] ) + speech_msg.slice( item[ 3 ] );
 			}
 

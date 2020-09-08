@@ -2,6 +2,7 @@
 Keep an ear on a Twitch stream chat !
 
 Find the site without installation here: http://aruchat.pergens.fr
+To access the current beta version, it's here: http://aruchat.pergens.fr/beta
 
 ![screenshot](/screenshot.png?raw=true "AruChat")
 
