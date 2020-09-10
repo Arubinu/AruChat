@@ -201,6 +201,7 @@
 			}
 		},
 		"errors": {
+			"templates":		"Error occurred while loading templates !",
 			"twitch": {
 				"title":		"Twitch Error",
 				"auth":			"Please check the name of the channel and/or its token !"
@@ -214,7 +215,10 @@
 		"loading":				"Click to continue ...",
 		"viewers":				"Viewers",
 		"followers":			"Followers",
-		"languages":			"Languages",
+		"languages": {
+			"title":			"Languages",
+			"list":				[]
+		},
 		"changelog":			"Changelog",
 		"close":				"Close",
 		"confirm":				"Confirm",
@@ -425,6 +429,7 @@
 			}
 		},
 		"errors": {
+			"templates":		"Erreur survenue lors du chargement des templates !",
 			"twitch": {
 				"title":		"Erreur Twitch",
 				"auth":			"Veuillez vérifier le nom de la chaîne et/ou son jeton !"
@@ -438,7 +443,10 @@
 		"loading":				"Cliquez pour continuer ...",
 		"viewers":				"Spectateurs",
 		"followers":			"Followers",
-		"languages":			"Langues",
+		"languages": {
+			"title":			"Langues",
+			"list":				[]
+		},
 		"changelog":			"Changelog",
 		"close":				"Fermer",
 		"confirm":				"Confirmer",

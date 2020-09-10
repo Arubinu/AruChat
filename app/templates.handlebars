@@ -170,7 +170,14 @@
 				<ul class="navbar-nav navbar-right">
 					<li title="{{ viewers }}"><span class="viewers">-</span> <i class="fas fa-users"></i></li>
 					<li title="{{ followers }}"><span class="followers">-</span> <i class="fas fa-id-badge"></i></li>
-					<li title="{{ languages }}" class="languages"><i class="fas fa-globe"></i></li>
+					<li title="{{ languages.title }}" class="dropdown dropdown-toggle languages" data-toggle="dropdown" id="languages-menu">
+						<i class="fas fa-globe"></i>
+						<div class="dropdown-menu dropdown-menu-right" aria-labelledby="languages-menu">
+							{{# each languages.list }}
+							<a href="#" class="dropdown-item" data-lang="{{ key }}">{{ value }}</a>
+							{{/ each }}
+						</div>
+					</li>
 					<li title="{{ changelog }}" class="changelog"><i class="fas fa-code-branch"></i></li>
 					<li class="version">{{ site.version }}</li>
 				</ul>

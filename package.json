@@ -1,6 +1,6 @@
 {
   "name": "AruChat",
-  "version": "0.0.53b",
+  "version": "0.0.53",
   "description": "Keep an ear on a Twitch stream chat !",
   "main": "main.js",
   "scripts": {

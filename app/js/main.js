@@ -289,7 +289,7 @@ window.addEventListener( 'load', () => {
 				if ( xhr.readyState == xhr.DONE )
 				{
 					if ( xhr.status != 200 )
-						return ( reject() );
+						return ( reject( xhr ) );
 					else if ( force_return )
 						return ( resolve( xhr ) );
 
@@ -411,7 +411,7 @@ window.addEventListener( 'load', () => {
 			}, false );
 		}
 
-		new BSN.Modal( elem ).show();
+		new BSN.Modal( elem, { backdrop: 'static' } ).show();
 		elem.addEventListener( 'hidden.bs.modal', () => {
 			elem.Modal.dispose();
 			elem.remove();
@@ -459,6 +459,7 @@ window.addEventListener( 'load', () => {
 			if ( localStorage.getItem( 'reset' ) === '1' )
 				localStorage.clear();
 
+			var loading = document.querySelector( '#loading' );
 			request( './languages.json', null, true )
 				.then( ( data ) => {
 					var list = [];
@@ -466,12 +467,19 @@ window.addEventListener( 'load', () => {
 						list[ data[ item ][ 0 ] ] = item;
 					} );
 
-					var lang = ( localStorage.getItem( 'language' ) || 'en-US' );
+					var lang = localStorage.getItem( 'language' );
+					lang = ( ( !lang || lang == 'null' ) ? 'en-US' : lang );
 					language = [ lang, list, data[ lang ][ 1 ] ];
 					language[ 2 ].site = {
 						name: 'AruChat',
 						version: document.querySelector( 'script:last-child' ).src.split( '?' ).slice( -1 )[ 0 ]
 					};
+					Object.keys( language[ 1 ] ).forEach( ( value ) => {
+						language[ 2 ].languages.list.push( {
+							key: language[ 1 ][ value ],
+							value: value
+						} );
+					} );
 					Object.keys( originals ).forEach( ( item ) => {
 						originals[ item ][ 0 ] = language[ 2 ].sentences[ item ][ 0 ];
 						originals[ item ][ 2 ] = language[ 2 ].sentences[ item ][ 1 ];
@@ -541,10 +549,12 @@ window.addEventListener( 'load', () => {
 									click();
 							} );
 
-							tlanguages.title = Object.keys( language[ 1 ] )[ Object.values( language[ 1 ] ).indexOf( language[ 0 ] ) ];
-							tlanguages.addEventListener( 'click', () => {
-								localStorage.setItem( 'language', ( localStorage.getItem( 'language' ) == 'fr-FR' ) ? 'en-US' : 'fr-FR' );
-								window.location.reload( true );
+							var dlanguages = new BSN.Dropdown( tlanguages );
+							document.querySelectorAll( '[data-lang]' ).forEach( ( elem ) => {
+								elem.addEventListener( 'click', () => {
+									localStorage.setItem( 'language', elem.getAttribute( 'data-lang' ) );
+									window.location.reload( true );
+								} ) ;
 							} );
 							tchangelog.addEventListener( 'click', () => {
 								request( './changelog.md', { responseType: 'text' }, true, true )
@@ -579,7 +589,6 @@ window.addEventListener( 'load', () => {
 							zstatus = zbase.querySelector( '.infos-status' );
 							zgame = zbase.querySelector( '.infos-game' );
 
-							var loading = document.querySelector( '#loading' );
 							loading.querySelector( '.fas' ).className = 'fas fa-mouse';
 							loading.querySelector( 'span' ).innerText = language[ 2 ].loading;
 							loading.addEventListener( 'click', () => {
@@ -599,12 +608,26 @@ window.addEventListener( 'load', () => {
 						} )
 						.catch( ( error ) => {
 							console.error( 'templates:', error );
-							// changer le chargement par une erreur
+							if ( error instanceof XMLHttpRequest )
+								error = `${error.status}: ${error.statusText}`;
+							else if ( typeof( error ) !== 'string' )
+								error = '';
+
+							loading.style.cursor = 'default';
+							loading.querySelector( '.fas' ).className = 'fas fa-exclamation-triangle';
+							loading.querySelector( 'span' ).innerText = `${language[ 2 ].errors.templates}\n${error}`;
 						} );
 				} )
 				.catch( ( error ) => {
 					console.error( 'languages:', error );
-					// changer le chargement par une erreur
+					if ( error instanceof XMLHttpRequest )
+						error = `${error.status}: ${error.statusText}`;
+					else if ( typeof( error ) !== 'string' )
+						error = '';
+
+					loading.style.cursor = 'default';
+					loading.querySelector( '.fas' ).className = 'fas fa-exclamation-triangle';
+					loading.querySelector( 'span' ).innerText = `Error occurred while loading languages !\n${error}`;
 				} );
 			return ;
 		}
