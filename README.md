@@ -1,4 +1,4 @@
-# AruChat
+# AruChat (TextToSpeed)
 Keep an ear on a Twitch stream chat !
 
 Find the site without installation here: http://aruchat.pergens.fr

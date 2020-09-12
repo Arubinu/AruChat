@@ -27,3 +27,16 @@ v0.0.53:
  - Displays tooltips on the left for smoother movement
  - Allows connection to a channel by pressing the 'Enter' key
  - Open users Twitch pages in the default browser (app)
+
+v0.0.54:
+ - Fix 'Automatic Scroll'
+ - Quick update of tooltips
+ - Hide tooltips when clicked
+ - Added toast maker function
+ - Fix title and position of drop-down lists
+ - Adds the 'Multiple channel' functionality
+ - Displays the error if the token scopes are incorrect
+ - Adds the logo of the channel where the message comes from
+ - Fix from clipboard (app)
+ - Launch only one instance (app)
+ - Add the button to reload the application in the systray (app)

@@ -532,6 +532,11 @@ img.navbar-brand {
 	color: #666;
 	vertical-align: -1px;
 }
+#chat > ul > li .logo {
+	display: none;
+	border-radius: 3px;
+}
+#chat > ul.logos > li .logo,
 #chat > ul.timestamp > li .time {
 	display: initial;
 }
@@ -683,6 +688,11 @@ img.navbar-brand {
 	top: 5px;
 	left: -30px;
 	cursor: pointer;
+}
+#settings > ul > li.channel > .value > .fas {
+	top: 8px;
+	left: -28px;
+	font-size: 21px;
 }
 #settings > ul.users > li > .value > .fas {
 	font-size: 22px;

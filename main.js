@@ -43,6 +43,16 @@ function createWindow()
 	win.setMenuBarVisibility( false );
 	win.loadFile( appindex );
 
+	// Check if a second instance is launched
+	const lock = app.requestSingleInstanceLock();
+	if ( !lock )
+		return ( app.quit() );
+
+	app.on( 'second-instance', ( event, commandLine, workingDirectory ) => {
+		win.show();
+		win.focus();
+	} );
+
 	// Display Systray
 	const contextMenu = Menu.buildFromTemplate( [
 		{
@@ -51,17 +61,14 @@ function createWindow()
 				win.show();
 			}
 		},
-		/*{
-			label: 'Edit',
-			submenu: [
-				{ label: 'Undo', accelerator: 'CmdOrCtrl+Z', selector: 'undo:' },
-				{ label: 'Redo', accelerator: 'Shift+CmdOrCtrl+Z', selector: 'redo:' },
-				{ type: 'separator' },
-				{ label: 'Cut', accelerator: 'CmdOrCtrl+X', selector: 'cut:' },
-				{ label: 'Copy', accelerator: 'CmdOrCtrl+C', selector: 'copy:' },
-				{ label: 'Paste', accelerator: 'CmdOrCtrl+V', selector: 'paste:' },
-			]
-		},*/
+		{
+			label: 'Reload',
+			selector: 'reload:',
+			accelerator: 'CmdOrCtrl+R',
+			click: () => {
+				win.loadFile( appindex );
+			}
+		},
 		{
 			type: 'separator'
 		},
@@ -94,18 +101,21 @@ function createWindow()
 	win.webContents.on( 'did-finish-load', () => {
 		win.webContents.executeJavaScript( `
 			window.addEventListener( 'keydown', function( event ) {
-				if ( event.keyCode === 88 && event.metaKey )
+				var CmdOrCtrl = ( event.ctrlKey || event.metaKey && event.ctrlKey != event.metaKey );
+				if ( event.keyCode === 88 && CmdOrCtrl )
 					document.execCommand( 'cut' );
-				else if ( event.keyCode === 67 && event.metaKey )
+				else if ( event.keyCode === 67 && CmdOrCtrl )
 					document.execCommand( 'copy' );
-				else if ( event.keyCode === 86 && event.metaKey )
+				else if ( event.keyCode === 86 && CmdOrCtrl )
 					document.execCommand( 'paste' );
-				else if ( event.keyCode === 65 && event.metaKey )
+				else if ( event.keyCode === 65 && CmdOrCtrl )
 					document.execCommand( 'selectAll' );
-				else if ( event.keyCode === 90 && event.metaKey )
+				else if ( event.keyCode === 90 && CmdOrCtrl )
 					document.execCommand( 'undo' );
-				else if ( event.keyCode === 89 && event.metaKey )
+				else if ( event.keyCode === 89 && CmdOrCtrl )
 					document.execCommand( 'redo' );
+				else if ( event.code === 'KeyR' && CmdOrCtrl )
+					document.location.reload( true );
 			} );
 		` );
 	} );

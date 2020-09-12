@@ -8,7 +8,7 @@ window.addEventListener( 'load', () => {
 	var	msg			= null,
 		url			= '',
 		line		= [],
-		logo		= null,
+		logos		= {},
 		token		= '',
 		voice		= [ -1, null ],
 		audios		= null,
@@ -22,8 +22,10 @@ window.addEventListener( 'load', () => {
 		voices		= [],
 		channel		= [ '', '' ],
 		nosleep		= null,
+		channels	= [],
 		excludes	= [],
-		language	= null;
+		language	= null,
+		onscroll	= [ false, true ],
 		followers	= [ 0, null ],
 		ksettings	= [ 'voice', 'rate', 'pitch', 'volume', 'sentences', 'words', 'links', 'emotes', 'ascii', 'lusername', 'lmessage', 'repeat', 'flooding' ],
 		sentences	= {},
@@ -68,6 +70,7 @@ window.addEventListener( 'load', () => {
 		iascii = null,
 		iaudio = null,
 		ilinks = null,
+		ilogos = null,
 		ipitch = null,
 		iemotes = null,
 		irepeat = null,
@@ -105,6 +108,7 @@ window.addEventListener( 'load', () => {
 		iflooding.value = parseInt( localStorage.getItem( 'flooding' ) || 0 );
 
 		itimestamp.checked = ( ( localStorage.getItem( 'timestamp' ) || 'true' ) == 'true' );
+		ilogos.checked = ( ( localStorage.getItem( 'logos' ) || 'false' ) == 'true' );
 		iautoscroll.checked = ( ( localStorage.getItem( 'autoscroll' ) || 'true' ) == 'true' );
 
 		umod.checked = ( ( localStorage.getItem( 'mod' ) || 'true' ) == 'true' );
@@ -117,6 +121,13 @@ window.addEventListener( 'load', () => {
 		ilusernames.dispatchEvent( html_change );
 		ilmessages.dispatchEvent( html_change );
 		iflooding.dispatchEvent( html_change );
+
+		try
+		{
+			var tmp = JSON.parse( localStorage.getItem( 'channels' ) );
+			if ( Array.isArray( tmp ) )
+				channels = tmp;
+		} catch ( e ) {}
 
 		// obsolete
 		try
@@ -136,7 +147,7 @@ window.addEventListener( 'load', () => {
 			{
 				Object.keys( tmp ).forEach( ( user_name ) => {
 					var tuser = tmp[ user_name ];
-					users[ user_name ] = { name: tuser.name };
+					users[ user_name ] = { name: ( ( typeof( tuser.name ) !== 'undefined' ) ? tuser.name : user_name ) };
 					ksettings.forEach( ( key ) => {
 						users[ user_name ][ key ] = ( ( typeof( tuser[ key ] ) !== 'undefined' ) ? tuser[ key ] : undefined );
 					} );
@@ -167,10 +178,12 @@ window.addEventListener( 'load', () => {
 				words = tmp;
 		} catch ( e ) {}
 
-		Object.keys( users ).forEach( ( user_name ) => { users_add( user_name, true ); } );
+		channels.forEach( ( channel_name ) => { channel_add( channel_name ); } );
+		Object.keys( users ).sort().forEach( ( user_name ) => { user_add( user_name, true ); } );
 		bwords.innerText = language[ 2 ].manage.variable.replace( '%s', Object.keys( words ).length );
 
 		toggle( 'timestamp' );
+		toggle( 'logos' );
 	}
 
 	/**
@@ -199,6 +212,7 @@ window.addEventListener( 'load', () => {
 			localStorage.setItem( 'flooding', ( data ? data.flooding : iflooding.value ) );
 
 			localStorage.setItem( 'timestamp', ( data ? data.timestamp : itimestamp.checked.toString() ) );
+			localStorage.setItem( 'logos', ( data ? data.logos : ilogos.checked.toString() ) );
 			localStorage.setItem( 'autoscroll', ( data ? data.autoscroll : iautoscroll.checked.toString() ) );
 
 			localStorage.setItem( 'mod', ( data ? data.mod : umod.checked ) );
@@ -206,6 +220,7 @@ window.addEventListener( 'load', () => {
 			localStorage.setItem( 'subscriber', ( data ? data.subscriber : usubscriber.checked ) );
 			localStorage.setItem( 'broadcaster', ( data ? data.broadcaster : ubroadcaster.checked ) );
 
+			localStorage.setItem( 'channels', ( data ? data.channels : JSON.stringify( channels ) ) );
 			localStorage.setItem( 'users', ( data ? data.users : JSON.stringify( users ) ) );
 			localStorage.setItem( 'sentences', ( data ? data.sentences : JSON.stringify( sentences ) ) );
 			localStorage.setItem( 'words', ( data ? data.words : JSON.stringify( words ) ) );
@@ -368,6 +383,75 @@ window.addEventListener( 'load', () => {
 	}
 
 	/**
+	 * @desc Returns the title of the element
+	 * @param	{HTMLElement}		elem				Target element
+	 * @return	{string}								Title of the element
+	 */
+	function title_get( elem )
+	{
+		return ( elem.getAttribute( 'data-original-title' ) || elem.getAttribute( 'title' ) );
+	}
+
+	/**
+	 * @desc Initializes the tooltips as well as their refresh
+	 * @param	{HTMLElement}		parent				Parent element grouping together all title attributes
+	 * @param	{string}			[placement]			Tooltip display direction
+	 */
+	function title_set( parent, placement )
+	{
+		parent = ( parent || document.body );
+		Array.from( parent.querySelectorAll( '[title]' ) ).map( ( elem ) => {
+			var tplacement = placement;
+			if ( !tplacement )
+			{
+				tplacement = 'top';
+				tplacement = ( elem.classList.contains( 'tip-left' ) ? 'left' : tplacement );
+				tplacement = ( elem.classList.contains( 'tip-right' ) ? 'right' : tplacement );
+				tplacement = ( elem.classList.contains( 'tip-bottom' ) ? 'bottom' : tplacement );
+			}
+
+			new BSN.Tooltip( elem, { placement: tplacement, delay: 250 } );
+
+			observer.observe( elem, {
+				attributes: true,
+				attributeFilter: [ 'data-original-title', ]
+			} );
+			elem.addEventListener( 'show.bs.tooltip', ( event ) => {
+				elem.setAttribute( 'data-original-show', '1' );
+				document.querySelectorAll( '.tooltip' ).forEach( ( tip ) => {
+					tip.addEventListener( 'click', () => {
+						tip.classList.remove( 'show' );
+						setTimeout( () => { tip.remove(); }, 1000 );
+					} );
+				} );
+			} );
+			elem.addEventListener( 'hide.bs.tooltip', ( event ) => {
+				elem.setAttribute( 'data-original-show', '0' );
+			} );
+		} );
+	}
+
+	/**
+	 * @desc Returns the name of the current title attribute
+	 * @param	{HTMLElement}		elem				Target element
+	 * @return	{string}								Current title attribute
+	 */
+	function title_attr( elem )
+	{
+		return ( elem.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' );
+	}
+
+	/**
+	 * @desc Updates the current title attribute
+	 * @param	{HTMLElement}		elem				Target element
+	 * @param	{string}			title				Replacement title
+	 */
+	function title_update( elem, title )
+	{
+		elem.setAttribute( title_attr( elem ), title );
+	}
+
+	/**
 	 * @desc Convert HTML code to elements
 	 * @param	{string}			template			Code HTML
 	 * @param	{bool}				first				Return only the first element
@@ -381,6 +465,31 @@ window.addEventListener( 'load', () => {
 	}
 
 	/**
+	 * @desc Open a toast
+	 * @param	{Object}			obj					Data to send to the template
+	 * @param	{bool}				autohide			Close the toast when a click is detected (enabled by default)
+	 * @return	{HTMLElement}							Toast element
+	 */
+	function toast( obj, autohide )
+	{
+		autohide = ( typeof( autohide ) === 'undefined' || autohide );
+		obj.autohide = autohide.toString();
+		var elem = html( templates.toast( Object.assign( {}, obj, language[ 2 ] ) ), true );
+		( dchat ? dchat.parentNode : document.body ).appendChild( elem );
+
+		var instance = new BSN.Toast( elem, { autohide: autohide } );
+		if ( typeof( obj.show ) === 'undefined' || obj.show )
+			instance.show();
+
+		elem.addEventListener( 'hidden.bs.modal', () => {
+			elem.Toast.dispose();
+			elem.remove();
+		}, false );
+
+		return ( elem );
+	}
+
+	/**
 	 * @desc Open a modal
 	 * @param	{Object}			obj					Data to send to the template
 	 * @param	{bool}				[large]				Enlarges the width of the modal
@@ -391,8 +500,7 @@ window.addEventListener( 'load', () => {
 		obj.large = !!large;
 		var elem = html( templates.modal( Object.assign( {}, obj, language[ 2 ] ) ), true );
 		document.body.appendChild( elem );
-
-		Array.from( elem.querySelectorAll( '[title]' ) ).map( elem => new BSN.Tooltip( elem, { placement: ( elem.classList.contains( 'tip-left' ) ? 'left' : 'top' ), delay: 250 } ) );
+		title_set( elem );
 
 		if ( obj.footer.input )
 		{
@@ -411,7 +519,10 @@ window.addEventListener( 'load', () => {
 			}, false );
 		}
 
-		new BSN.Modal( elem, { backdrop: 'static' } ).show();
+		var instance = new BSN.Modal( elem, { backdrop: 'static' } );
+		if ( typeof( obj.show ) === 'undefined' || obj.show )
+			instance.show();
+
 		elem.addEventListener( 'hidden.bs.modal', () => {
 			elem.Modal.dispose();
 			elem.remove();
@@ -428,21 +539,29 @@ window.addEventListener( 'load', () => {
 	function fixed_dropdown( elem )
 	{
 		var dropdown = new BSN.Dropdown( elem );
+		elem.addEventListener( 'click', () => {
+			if ( elem.Tooltip )
+				elem.Tooltip.hide();
+		} );
 		elem.parentNode.addEventListener( 'show.bs.dropdown', function( event ) {
-			var next = elem.querySelector( '.dropdown-toggle' );
-			var menu = elem.querySelector( '.dropdown-menu' );
+			var navbar = elem.matches( '.navbar :scope' );
+			var next = elem.querySelector( ':scope.dropdown-toggle, .dropdown-toggle' );
+			var menu = ( elem.querySelector( '.dropdown-menu' ) || document.querySelector( `[aria-labelledby=${elem.id}].dropdown-menu` ) );
 
 			var pos = { x: 0, y: 0 };
-			while ( next.offsetParent )
+			while ( next && next.offsetParent )
 			{
 				next = next.offsetParent;
 				pos.x += next.offsetLeft;
 				pos.y += next.offsetTop;
 			}
 
+			var top = ( navbar ? 40 : pos.y );
+			var right = ( navbar ? 5 : ( document.body.offsetWidth - pos.x ) );
+
 			menu.style.position = 'fixed';
-			menu.style.top = `${pos.y}px`;
-			menu.style.right = `${document.body.offsetWidth - pos.x}px`;
+			menu.style.top = `${top}px`;
+			menu.style.right = `${right}px`;
 		}, false );
 
 		return ( dropdown );
@@ -498,6 +617,7 @@ window.addEventListener( 'load', () => {
 
 							dchat = dbase.querySelector( '#chat > ul' );
 							dsettings = dbase.querySelector( '#settings' );
+							badd = dsettings.querySelector( 'button[name=add]' );
 							btest = dsettings.querySelector( 'button[name=test]' );
 							breset = dsettings.querySelector( 'button[name=reset]' );
 							bwords = dsettings.querySelector( 'button[name=words]' );
@@ -517,6 +637,7 @@ window.addEventListener( 'load', () => {
 							iascii = dsettings.querySelector( 'input[name=ascii]' );
 							iaudio = dsettings.querySelector( 'input[name=audio]' );
 							ilinks = dsettings.querySelector( 'input[name=links]' );
+							ilogos = dsettings.querySelector( 'input[name=logos]' );
 							ipitch = dsettings.querySelector( 'input[name=pitch]' );
 							iemotes = dsettings.querySelector( 'input[name=emotes]' );
 							irepeat = dsettings.querySelector( 'input[name=repeat]' );
@@ -549,7 +670,15 @@ window.addEventListener( 'load', () => {
 									click();
 							} );
 
-							var dlanguages = new BSN.Dropdown( tlanguages );
+							dchat.parentNode.addEventListener( 'scroll', ( event ) => {
+								if ( onscroll[ 0 ] )
+									return ;
+
+								var dchat_parent = dchat.parentNode;
+								onscroll[ 1 ] = ( ( dchat_parent.scrollTop + dchat_parent.offsetHeight ) >= ( dchat_parent.scrollHeight - 35 ) );
+							} );
+
+							var dlanguages = fixed_dropdown( tlanguages );
 							document.querySelectorAll( '[data-lang]' ).forEach( ( elem ) => {
 								elem.addEventListener( 'click', () => {
 									localStorage.setItem( 'language', elem.getAttribute( 'data-lang' ) );
@@ -561,7 +690,7 @@ window.addEventListener( 'load', () => {
 									.then( ( data ) => {
 										var changelog = data.response.replace( /^(v[0-9]+:)$/gm, '<u>\$1</u>' ).replace( /\'(.*)\'/gm, '\'<i>\$1</i>\'' );
 										modal( {
-											title:			( tchangelog.getAttribute( 'data-original-title' ) || tchangelog.title ),
+											title:			title_get( tchangelog ),
 											html:			'<span style="white-space: pre-wrap;">%s</span>'.replace( '%s', changelog ),
 											footer: {
 												input:		false,
@@ -575,15 +704,21 @@ window.addEventListener( 'load', () => {
 									} );
 							} );
 
-							[ ...html( templates.toast( {
-								title:	language[ 2 ].toasts.connection.title,
-								body:	language[ 2 ].toasts.connection.body
-							} ) ) ].forEach( ( item ) => {
-								dchat.parentNode.appendChild( item );
-							} );
+							/* autohide not work (to deactivate it)
+							zbase = toast( {
+								show:			false,
+								close:			false,
+								html:			templates.infos()
+							}, false );
+							*/
+							zbase = html( templates.toast( {
+								show:			false,
+								close:			false,
+								html:			templates.infos()
+							} ), true );
+							dchat.appendChild( zbase );
 
-							dtoast = dbase.querySelector( '.toast' );
-							zbase = dbase.querySelector( '.infos' );
+							zbase.classList.add( 'infos' );
 							zlogo = zbase.querySelector( '.infos-icon > img' );
 							zname = zbase.querySelector( '.infos-name' );
 							zstatus = zbase.querySelector( '.infos-status' );
@@ -594,10 +729,14 @@ window.addEventListener( 'load', () => {
 							loading.addEventListener( 'click', () => {
 								init( 1 );
 
-								new BSN.Toast( '.toast' );
 								if ( !ichannel.value )
 								{
-									dtoast.Toast.show();
+									dtoast = toast( {
+										show:			true,
+										close:			true,
+										title:			language[ 2 ].toasts.connection.title,
+										body:			language[ 2 ].toasts.connection.body
+									}, true );
 									dbase.classList.toggle( 'show-settings', true );
 								}
 								else
@@ -652,6 +791,7 @@ window.addEventListener( 'load', () => {
 			} );
 			lateral[ 5 ].addEventListener( 'click', () => {
 				dchat.innerText = '';
+				onscroll[ 1 ] = true;
 			} );
 
 			var delay = 0;
@@ -676,7 +816,8 @@ window.addEventListener( 'load', () => {
 			};
 			zbase.addEventListener( 'click', zclick );
 
-			btest.addEventListener( 'click', () => { speech( language[ 2 ].test.speech ); } );
+			badd.addEventListener( 'click', channel_add );
+			btest.addEventListener( 'click', () => { speech( language[ 2 ].test.speech, undefined, undefined, undefined, true ); } );
 			breset.addEventListener( 'click', () => {
 				localStorage.setItem( 'reset', '1' );
 				window.location.reload( true );
@@ -747,21 +888,22 @@ window.addEventListener( 'load', () => {
 					connect();
 			} );
 
-			iuser.addEventListener( 'input', users_search );
-			iuser.addEventListener( 'change', users_search );
-			iuseradd.addEventListener( 'click', users_add );
+			iuser.addEventListener( 'input', user_search );
+			iuser.addEventListener( 'change', user_search );
+			iuseradd.addEventListener( 'click', user_add );
 
-			ivolume.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.volume.change.replace( '%d', parseInt( parseFloat( this.value ) * 100 ) ) ); } );
-			ilusernames.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.limit.usernames.change.replace( '%d', parseInt( this.value ) ) ); } );
-			ilmessages.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.limit.messages.change.replace( '%d', parseInt( this.value ) ) ); } );
-			irepeat.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.repeat.change.replace( '%d', parseInt( this.value ) ) ); } );
-			iflooding.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.flooding.change.replace( '%d', parseInt( this.value ) ) ); } );
+			ivolume.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.volume.change.replace( '%d', parseInt( parseFloat( this.value ) * 100 ) ) ); } );
+			ilusernames.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.limit.usernames.change.replace( '%d', parseInt( this.value ) ) ); } );
+			ilmessages.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.limit.messages.change.replace( '%d', parseInt( this.value ) ) ); } );
+			irepeat.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.repeat.change.replace( '%d', parseInt( this.value ) ) ); } );
+			iflooding.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.flooding.change.replace( '%d', parseInt( this.value ) ) ); } );
 			itimestamp.addEventListener( 'click', function() { toggle( 'timestamp' ); } );
+			ilogos.addEventListener( 'click', function() { toggle( 'logos' ); } );
 
 			var more = ichannel.parentNode.querySelector( ':scope > .fas' );
 			more.addEventListener( 'click', function() {
 				var imodal = modal( {
-					title:			( this.getAttribute( 'data-original-title' ) || this.title ),
+					title:			title_get( this ),
 					html:			templates.channels( {
 						token: {
 							title:			language[ 2 ].modals.token.title,
@@ -827,7 +969,7 @@ window.addEventListener( 'load', () => {
 							var blob = new Blob( [ new Uint8Array( data.response ) ], { type: 'image/png' } );
 							var image = ( window.URL || window.webkitURL ).createObjectURL( blob );
 							var imodal = modal( {
-								title:			( this.getAttribute( 'data-original-title' ) || this.title ),
+								title:			title_get( this ),
 								html:			'<img src="%s" style="max-width: 100%;" />'.replace( '%s', image ),
 								footer: {
 									input:		false,
@@ -848,8 +990,8 @@ window.addEventListener( 'load', () => {
 			ivolume.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { ivolume.value = 0; ivolume.dispatchEvent( html_change ); } );
 			iflooding.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { iflooding.value = 0; iflooding.dispatchEvent( html_change ); } );
 
+			title_set();
 			Array.from( document.querySelectorAll( '.custom-toggle' ) ).map( elem => new BSN.Collapse( elem ) );
-			Array.from( document.querySelectorAll( '[title]' ) ).map( elem => new BSN.Tooltip( elem, { placement: ( elem.classList.contains( 'tip-left' ) ? 'left' : 'top' ), delay: 250 } ) );
 			Array.from( document.querySelectorAll( 'input[type=checkbox], button' ) ).map( elem => document.addEventListener( 'click', () => { elem.blur(); } ) );
 
 			load();
@@ -858,8 +1000,8 @@ window.addEventListener( 'load', () => {
 				if ( inchat || !line.length )
 					return ;
 
-				var [ text, user, flags ] = line.shift();
-				if ( user && typeof( users[ user.toLowerCase() ] ) === 'undefined' && flags )
+				var [ text, user, flags, extra ] = line.shift();
+				if ( user && !user_get( user ) && flags )
 				{
 					var mod = ( flags.mod && !umod.checked );
 					var subscriber = ( flags.subscriber && !usubscriber.checked );
@@ -870,77 +1012,8 @@ window.addEventListener( 'load', () => {
 						return ;
 				}
 
-				speech( text, true, user, flags );
+				speech( text, true, user, flags, extra );
 			}, 50 );
-
-			var channel_count = 0;
-			var channel_next = () => {
-				--channel_count;
-				if ( channel_count > 0 )
-					return ;
-
-				channel_count = 2;
-				setTimeout( channel_update, 5000 );
-			};
-
-			var channel_update = () => {
-				var tchannel = channel[ 1 ];
-				if ( !tchannel )
-					return ( setTimeout( channel_update, 500 ) );
-
-				dsettings.querySelectorAll( '[data-user]' ).forEach( ( elem ) => {
-					var elem_name = elem.getAttribute( 'data-user' ).trim().toLowerCase();
-					if ( typeof( users[ elem_name ] ) !== 'undefined' )
-						return ;
-
-					delete users[ elem_name ];
-					elem.remove();
-				} );
-
-				channel_stream( tchannel, ( data ) => {
-					stream = data;
-					update();
-					channel_next();
-				} );
-
-				channel_followers( tchannel, ( data ) => {
-					if ( channel[ 1 ] != tchannel )
-						return ( channel_next() );
-
-					var current = {};
-					data.follows.forEach( ( item ) => { current[ item.user._id ] = item.user.display_name; } );
-
-					if ( followers[ 1 ] )
-					{
-						var arrivals = [];
-						Object.keys( current ).forEach( ( user_id ) => {
-							if ( typeof( followers[ 1 ][ user_id ] ) !== 'string' )
-							{
-								var user_name = current[ user_id ];
-								followers[ 1 ][ user_id ] = user_name;
-								arrivals.push( user_name );
-							}
-						} );
-
-						followers[ 0 ] = data._total;
-						if ( arrivals.length )
-						{
-							console.log( 'onFollow:', arrivals );
-							var usernames = arrivals.join( ', ' );
-							var [ chat_enabled, speech_enabled, template ] = sentence( 0b100, 'follow' );
-							if ( chat_enabled )
-								chat( `New follower(s): ${usernames}` );
-							if ( speech_enabled )
-								speech( template.replace( /\$usernames\$/g, usernames ) );
-						}
-					}
-					else
-						followers = [ data._total, current ];
-
-					update();
-					channel_next();
-				} );
-			};
 
 			channel_next();
 		}
@@ -970,7 +1043,7 @@ window.addEventListener( 'load', () => {
 
 					var span = document.createElement( 'span' );
 					span.textContent = text;
-					svoice.setAttribute( ( svoice.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), span.innerHTML );
+					svoice.setAttribute( title_attr( svoice ), span.innerHTML );
 				}
 
 				var option = document.createElement( 'a' );
@@ -995,7 +1068,7 @@ window.addEventListener( 'load', () => {
 
 				var span = document.createElement( 'span' );
 				span.textContent = text;
-				svoice.setAttribute( ( svoice.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), span.innerHTML );
+				svoice.setAttribute( title_attr( svoice ), span.innerHTML );
 			} );
 
 			msg = new SpeechSynthesisUtterance();
@@ -1017,11 +1090,17 @@ window.addEventListener( 'load', () => {
 
 		line = [];
 		channel = [ ichannel.value, '' ];
+		channels = [];
 		followers = [ 0, null ];
 
+		document.querySelectorAll( '.channel input' ).forEach( ( elem ) => {
+			var value = elem.value;
+			if ( value )
+				channels.push( value );
+		} );
+
 		if ( channel[ 0 ] )
-			ComfyJS.Init( channel[ 0 ], ( token || null ) );
-			//ComfyJS.Init( channel[ 0 ], ( token || null ), [ 'ChannelA', 'ChannelB', 'ChannelC' ] );
+			ComfyJS.Init( channel[ 0 ], ( token || null ), [ channel[ 0 ] ].concat( channels ) );
 
 		if ( dtoast )
 		{
@@ -1044,7 +1123,10 @@ window.addEventListener( 'load', () => {
 		{
 			ComfyJS.Disconnect();
 			if ( channel[ 0 ] )
-				chat( ( ( typeof( text ) === 'string' ) ? text : language[ 2 ].chat.disconnected ).replace( /\$channel\$/g, channel[ 0 ] ), undefined, { disconnected: true } );
+			{
+				var channel_all = [ channel[ 0 ] ].concat( channels ).join( ', ' );
+				chat( ( ( typeof( text ) === 'string' ) ? text : language[ 2 ].chat.disconnected ).replace( /\$channel_name\$/g, channel_all ), undefined, { disconnected: true } );
+			}
 		} catch ( e ) {}
 
 		url = '';
@@ -1091,29 +1173,10 @@ window.addEventListener( 'load', () => {
 			zstatus.innerText = ( subdata ? subdata.status : '...' );
 			zgame.innerText = ( data ? data.game : '...' );
 
-			var dlogo = 'images/default.png';
-			var tlogo = ( subdata && subdata.logo );
-			if ( tlogo )
-			{
-				if ( tlogo != logo )
-				{
-					logo = tlogo;
-					request( tlogo, { responseType: 'arraybuffer' }, true, true )
-						.then( ( data ) => {
-							var blob = new Blob( [ new Uint8Array( data.response ) ], { type: 'image/png' } );
-							zlogo.src = ( window.URL || window.webkitURL ).createObjectURL( blob );
-						} )
-						.catch( ( error ) => {
-							console.error( 'logo:', error );
-							zlogo.src = dlogo;
-						} );
-				}
-			}
-			else
-			{
-				logo = dlogo;
-				zlogo.src = dlogo;
-			}
+			channel_logo( subdata._id, subdata, ( channel_id, data, logo ) => {
+				if ( channel[ 1 ] == channel_id )
+					zlogo.src = logo;
+			} );
 		}
 
 		tviewers.innerText = ( cstream ? stream.viewers.toString().replace( /\B(?=(\d{3})+(?!\d))/g, ' ' ) : '-' );
@@ -1121,21 +1184,176 @@ window.addEventListener( 'load', () => {
 	}
 
 	/**
+	 * @desc Add an extra channel to watch
+	 * @param	{string}			channel_name		Twitch Channel name
+	 */
+	function channel_add( channel_name )
+	{
+		channel_name = ( ( typeof( channel_name ) === 'string' ) ? channel_name : '' );
+
+		var elem = html( templates.channel( { value: channel_name } ), true );
+		elem.querySelector( '.fas' ).addEventListener( 'click', () => {
+			elem.remove();
+		} );
+
+		var audio = document.querySelector( '.connection [name=audio]' ).closest( 'li' );
+		audio.parentNode.insertBefore( elem, audio );
+	}
+
+	/**
+	 * @desc Generates a logo blob of the requested channel
+	 * @param	{string}			channel_id			Twitch Channel ID
+	 * @param	{Object}			data				Twitch Channel infos
+	 * @param	{function}			[callback]			Call this function when logo retrieval is complete
+	 */
+	function channel_logo( channel_id, data, callback )
+	{
+		var exist = false;
+		if ( !channel_id || ( ( exist = ( typeof( logos[ channel_id ] ) !== 'undefined' ) ) && logos[ channel_id ][ 1 ] ) )
+			return ;
+
+		var dlogo = 'images/default.png';
+		var tlogo = ( data && data.logo );
+		if ( tlogo )
+		{
+			if ( !exist || tlogo != logos[ channel_id ][ 0 ] || !logos[ channel_id ][ 1 ] )
+			{
+				logos[ channel_id ] = [ tlogo, null ];
+				request( tlogo, { responseType: 'arraybuffer' }, true, true )
+					.then( ( data ) => {
+						var blob = new Blob( [ new Uint8Array( data.response ) ], { type: 'image/png' } );
+						logos[ channel_id ][ 1 ] = ( window.URL || window.webkitURL ).createObjectURL( blob );
+						callback( channel_id, data, logos[ channel_id ][ 1 ] );
+					} )
+					.catch( ( error ) => {
+						console.error( 'logo:', error );
+						callback( channel_id, data, dlogo );
+					} );
+			}
+			else if ( exist )
+				callback( channel_id, data, ( logos[ channel_id ][ 1 ] ? logos[ channel_id ][ 1 ] : dlogo ) );
+		}
+		else
+		{
+			logos[ channel_id ] = [ dlogo, null ];
+			callback( channel_id, data, dlogo );
+		}
+	}
+
+	var channel_count = 0;
+	/**
+	 * @desc Manage the up-to-date stream information
+	 */
+	function channel_next()
+	{
+		--channel_count;
+		if ( channel_count > 0 )
+			return ;
+
+		channel_count = 2;
+		setTimeout( channel_update, 5000 );
+	}
+
+	/**
+	 * @desc Request update of stream information
+	 */
+	function channel_update()
+	{
+		var tchannel = channel[ 1 ];
+		if ( !tchannel )
+			return ( setTimeout( channel_update, 500 ) );
+
+		dsettings.querySelectorAll( '[data-user]' ).forEach( ( elem ) => {
+			var elem_name = elem.getAttribute( 'data-user' ).trim().toLowerCase();
+			if ( user_get( elem_name ) )
+				return ;
+
+			delete users[ elem_name ];
+			elem.remove();
+		} );
+
+		channel_stream( tchannel, ( data ) => {
+			stream = data;
+			update();
+			channel_next();
+		} );
+
+		channel_followers( tchannel, ( data ) => {
+			if ( channel[ 1 ] != tchannel )
+				return ( channel_next() );
+
+			var current = {};
+			data.follows.forEach( ( item ) => { current[ item.user._id ] = item.user.display_name; } );
+
+			if ( followers[ 1 ] )
+			{
+				var arrivals = [];
+				Object.keys( current ).forEach( ( user_id ) => {
+					if ( typeof( followers[ 1 ][ user_id ] ) !== 'string' )
+					{
+						var user_name = current[ user_id ];
+						followers[ 1 ][ user_id ] = user_name;
+						arrivals.push( user_name );
+					}
+				} );
+
+				followers[ 0 ] = data._total;
+				if ( arrivals.length )
+				{
+					if ( localStorage.getItem( 'debug' ) )
+						console.log( 'onFollow:', arrivals );
+
+					var usernames = arrivals.join( ', ' );
+					var [ chat_enabled, speech_enabled, template ] = sentence( 0b100, 'follow' );
+					if ( chat_enabled )
+						chat( `New follower(s): ${usernames}` );
+					if ( speech_enabled )
+						speech( template.replace( /\$usernames\$/g, usernames ) );
+				}
+			}
+			else
+				followers = [ data._total, current ];
+
+			update();
+			channel_next();
+		} );
+	}
+
+	/**
+	 * @desc Returns the requested user if it exists
+	 * @param	{string}			user_name			User name to add
+	 * @return	{(false|Object)}						User object
+	 */
+	function user_get( user_name )
+	{
+		if ( user_name )
+			user_name = user_name.trim().toLowerCase();
+
+		return ( ( user_name && typeof( users[ user_name ] ) !== 'undefined' ) ? users[ user_name ] : false );
+	}
+
+	/**
 	 * @desc Allows you to manage the settings of a particular user
 	 * @param	{string}			user_name			User name to add
 	 * @param	{bool}				[force]				Allows you to initialize the interface with existing users
 	 */
-	function users_add( user_name, force )
+	function user_add( user_name, force )
 	{
 		iuser.focus();
 		user_name = ( ( typeof( user_name ) === 'string' ) ? user_name : iuser.value ).trim().toLowerCase();
+		if ( !user_name )
+			return ;
+
+		var tuser = user_get( user_name );
 		if ( force !== true )
 		{
-			if ( !user_name || typeof( users[ user_name ] ) !== 'undefined' )
+			if ( tuser )
 				return ;
 
 			users[ user_name ] = { name: user_name };
 		}
+		else if ( !tuser || typeof( tuser.name ) === 'undefined' || !tuser.name )
+			return ;
 
 		ksettings.forEach( ( key ) => {
 			if ( typeof( users[ user_name ][ key ] ) === 'undefined' )
@@ -1207,7 +1425,7 @@ window.addEventListener( 'load', () => {
 
 					var span = document.createElement( 'span' );
 					span.textContent = text;
-					usvoice.setAttribute( ( usvoice.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), span.innerHTML );
+					usvoice.setAttribute( title_attr( usvoice ), span.innerHTML );
 				}
 
 				var option = document.createElement( 'a' );
@@ -1232,7 +1450,7 @@ window.addEventListener( 'load', () => {
 
 				var span = document.createElement( 'span' );
 				span.textContent = text;
-				usvoice.setAttribute( ( usvoice.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), span.innerHTML );
+				usvoice.setAttribute( title_attr( usvoice ), span.innerHTML );
 			} );
 
 			body.querySelector( 'button[name=sentences]' ).addEventListener( 'click', function() {
@@ -1292,11 +1510,11 @@ window.addEventListener( 'load', () => {
 			var uirepeat = body.querySelector( '.value input[name=repeat]' );
 			var uiflooding = body.querySelector( '.value input[name=flooding]' );
 
-			uivolume.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.volume.change.replace( '%d', parseInt( parseFloat( this.value ) * 100 ) ) ); } );
-			uilusername.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.limit.usernames.change.replace( '%d', parseInt( this.value ) ) ); } );
-			uilmessage.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.limit.messages.change.replace( '%d', parseInt( this.value ) ) ); } );
-			uirepeat.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.repeat.change.replace( '%d', parseInt( this.value ) ) ); } );
-			uiflooding.addEventListener( 'change', function() { this.setAttribute( ( this.getAttribute( 'data-original-title' ) ? 'data-original-title' : 'title' ), language[ 2 ].voice.flooding.change.replace( '%d', parseInt( this.value ) ) ); } );
+			uivolume.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.volume.change.replace( '%d', parseInt( parseFloat( this.value ) * 100 ) ) ); } );
+			uilusername.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.limit.usernames.change.replace( '%d', parseInt( this.value ) ) ); } );
+			uilmessage.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.limit.messages.change.replace( '%d', parseInt( this.value ) ) ); } );
+			uirepeat.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.repeat.change.replace( '%d', parseInt( this.value ) ) ); } );
+			uiflooding.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.flooding.change.replace( '%d', parseInt( this.value ) ) ); } );
 
 			uivolume.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { uivolume.value = 0; uivolume.dispatchEvent( html_change ); } );
 			uiflooding.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { uiflooding.value = 0; uiflooding.dispatchEvent( html_change ); } );
@@ -1331,28 +1549,24 @@ window.addEventListener( 'load', () => {
 
 			this.Tooltip.dispose();
 		} );
-
-		Array.from( li.querySelectorAll( '[title]' ) ).map( elem => new BSN.Tooltip( elem, { placement: ( elem.classList.contains( 'tip-left' ) ? 'left' : 'top' ), delay: 250 } ) );
+		title_set( li );
 
 		iuser.value = '';
-		users_search();
+		user_search();
 	}
 
-	var users_timeout = 0;
+	var user_timeout = 0;
 	/**
 	 * @desc Retrieve information related to the current Stream
 	 * @param	{Event}				event				Targeted address
 	 */
-	function users_search( event )
+	function user_search( event )
 	{
-		if ( users_timeout )
-			clearTimeout( users_timeout );
+		if ( user_timeout )
+			clearTimeout( user_timeout );
 
 		if ( event )
-		{
-			users_timeout = setTimeout( users_search, 500 );
-			return ;
-		}
+			return ( user_timeout = setTimeout( user_search, 500 ) );
 
 		var user_name = iuser.value.trim().toLowerCase();
 		dsettings.querySelectorAll( '[data-user]' ).forEach( ( elem ) => {
@@ -1393,17 +1607,13 @@ window.addEventListener( 'load', () => {
 		}
 		else if ( more && typeof( more ) == 'string' )
 		{
-			var user_name = more.toLowerCase();
-			if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
+			var tuser = user_get( more );
+			if ( tuser && typeof( tuser.sentences ) !== 'undefined' && typeof( tuser.sentences[ type ] ) !== 'undefined' )
 			{
-				var tuser = users[ user_name ];
-				if ( typeof( tuser.sentences ) !== 'undefined' && typeof( tuser.sentences[ type ] ) !== 'undefined' )
-				{
-					var tmp = tuser.sentences[ type ];
-					chat_enabled = ( ( typeof( tmp[ 1 ] ) !== 'undefined' ) ? tmp[ 1 ] : chat_enabled );
-					speech_enabled = ( ( typeof( tmp[ 2 ] ) !== 'undefined' ) ? tmp[ 2 ] : speech_enabled );
-					template = ( ( tmp[ 0 ] && tmp[ 0 ].trim() ) ? tmp[ 0 ] : template );
-				}
+				var tmp = tuser.sentences[ type ];
+				chat_enabled = ( ( typeof( tmp[ 1 ] ) !== 'undefined' ) ? tmp[ 1 ] : chat_enabled );
+				speech_enabled = ( ( typeof( tmp[ 2 ] ) !== 'undefined' ) ? tmp[ 2 ] : speech_enabled );
+				template = ( ( tmp[ 0 ] && tmp[ 0 ].trim() ) ? tmp[ 0 ] : template );
 			}
 		}
 
@@ -1505,7 +1715,7 @@ window.addEventListener( 'load', () => {
 		}
 
 		imodal.querySelector( '.modal-footer' ).prepend( reset );
-		new BSN.Tooltip( reset, { placement: ( reset.classList.contains( 'tip-left' ) ? 'left' : 'top' ), delay: 250 } );
+		title_set( reset );
 
 		Array.from( imodal.querySelectorAll( '.modal-body .nav-link' ) ).map( item => new BSN.Tab( item, { height: true } ) );
 	}
@@ -1668,28 +1878,31 @@ window.addEventListener( 'load', () => {
 			dmessage.innerText = message;
 
 		var obj = {
-			user: user,
-			class: dclass,
-			extra: extra,
-			flags: flags,
-			message: dmessage.innerHTML,
-			special: special,
-			timestamp: timestamp.getTime(),
-			color: ( extra ? colors[ extra.userId ] : 'initial' ),
-			accept: [ 'broadcaster', 'mod', 'founder', 'vip', 'subscriber', 'premium', 'partner' ],
-			time: ( '0' + timestamp.getHours() ).slice( -2 ) + ':' + ( '0' + timestamp.getMinutes() ).slice( -2 ),
+			channel: {
+				name:	( ( extra && typeof( extra.channel ) === 'string' ) ? extra.channel : '' ),
+				image:	( ( extra && typeof( extra.roomId ) === 'string' && typeof( logos[ extra.roomId ] ) !== 'undefined' && logos[ extra.roomId ][ 1 ] ) ? logos[ extra.roomId ][ 1 ] : './images/default.png' )
+			},
+			user:		user,
+			class:		dclass,
+			extra:		extra,
+			flags:		flags,
+			time:		( '0' + timestamp.getHours() ).slice( -2 ) + ':' + ( '0' + timestamp.getMinutes() ).slice( -2 ),
+			color:		( extra ? colors[ extra.userId ] : 'initial' ),
+			accept:		[ 'broadcaster', 'mod', 'founder', 'vip', 'subscriber', 'premium', 'partner' ],
+			message:	dmessage.innerHTML,
+			special:	special,
+			timestamp:	timestamp.getTime()
 		};
 
-		var dchat_parent = dchat.parentNode;
-		var dchat_diff = ( dchat.offsetHeight >= ( dchat_parent.offsetHeight - 20 ) );
-		var bottom = ( ( dchat_parent.scrollTop + ( dchat_diff ? dchat_parent : dchat ).offsetHeight ) >= ( dchat_parent.scrollHeight - 20 ) );
-
+		onscroll[ 0 ] = true;
 		var li = html( templates.message( Object.assign( {}, { data: obj }, language[ 2 ] ) ), true );
 		dchat.appendChild( li );
-		Array.from( li.querySelectorAll( '[title]' ) ).map( tip => new BSN.Tooltip( tip, { placement: 'top', delay: 250 } ) );
+		title_set( li );
 
-		if ( iautoscroll.checked && bottom )
+		var dchat_parent = dchat.parentNode;
+		if ( iautoscroll.checked && onscroll[ 1 ] )
 			dchat_parent.scrollTop = dchat_parent.scrollHeight;
+		setTimeout( () => { onscroll[ 0 ] = false; }, 100 );
 
 		return ( li );
 	}
@@ -1701,10 +1914,10 @@ window.addEventListener( 'load', () => {
 	 * @param	{string}			[user]				Twitch username
 	 * @param	{Object}			[flags]				User-related flags
 	 */
-	function speech( text, force, user, flags )
+	function speech( text, force, user, flags, extra )
 	{
 		if ( !force )
-			return ( line.push( [ text, user, flags ] ) );
+			return ( line.push( [ text, user, flags, extra ] ) );
 		if ( !msg || !text )
 			return ;
 
@@ -1718,10 +1931,9 @@ window.addEventListener( 'load', () => {
 			flooding:	parseInt( iflooding.value )
 		}
 
-		var user_name = ( user ? user.trim().toLowerCase() : false );
-		if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
+		var tuser = user_get( user );
+		if ( tuser )
 		{
-			var tuser = users[ user_name ];
 			Object.keys( data ).forEach( ( key ) => {
 				var type = typeof( tuser[ key ] );
 				if ( type === 'string' )
@@ -1756,6 +1968,24 @@ window.addEventListener( 'load', () => {
 		if ( !msg.volume || ( user && flooding < 100 && FloodDetector.evaluate( text, flooding ) ) )
 			return ( inchat = false );
 
+		if ( extra !== true )
+		{
+			var repeat_value = parseInt( irepeat.value );
+			if ( tuser && typeof( tuser.repeat ) !== 'undefined' )
+				repeat_value = parseInt( tuser.repeat );
+
+			if ( extra && repeat[ 0 ] > 0 && repeat[ 1 ] == extra.userId )
+			{
+				if ( repeat[ 0 ] > repeat_value )
+					repeat[ 0 ] = repeat_value;
+
+				--repeat[ 0 ];
+				text = limit( 'message', lmessage, user );
+			}
+			else
+				repeat = [ repeat_value, ( extra ? extra.userId : '' ) ];
+		}
+
 		window.speechSynthesis.speak( msg );
 	}
 
@@ -1783,10 +2013,9 @@ window.addEventListener( 'load', () => {
 			lmessage:	ilmessages.value
 		};
 
-		user_name = ( user_name ? user_name.toLowerCase() : false );
-		if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
+		var tuser = user_get( user_name );
+		if ( tuser )
 		{
-			var tuser = users[ user_name ];
 			data.lusername	= ( ( typeof( tuser.lusername ) !== 'undefined' ) ? tuser.lusername : data.lusername ),
 			data.lmessage	= ( ( typeof( tuser.lmessage ) !== 'undefined' ) ? tuser.lmessage : data.lmessage )
 		}
@@ -1814,11 +2043,7 @@ window.addEventListener( 'load', () => {
 		user = ( uuser ? user.toLowerCase() : user );
 		message = ( umessage ? message.toLowerCase() : message );
 
-		var tuser = null;
-		var user_name = ( user && user.toLowerCase() );
-		if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
-			tuser = users[ user_name ];
-
+		var tuser = user_get( user );
 		var uwords = ( tuser && typeof( tuser.words ) !== 'undefined' );
 		var twords = ( ( !uwords && words ) || ( uwords && tuser.words ) );
 		Object.keys( twords ).forEach( ( word ) => {
@@ -1844,12 +2069,8 @@ window.addEventListener( 'load', () => {
 	function convert( type, user, message, flags, extra )
 	{
 		var cut = [];
+		var tuser = user_get( user );
 		var [ chat_enabled, speech_enabled, template ] = ( type ? sentence( 0b100, type, user ) : [ true, true, type ] );
-
-		var tuser = null;
-		var user_name = ( user && user.toLowerCase() );
-		if ( user_name && typeof( users[ user_name ] ) !== 'undefined' )
-			tuser = users[ user_name ];
 
 		try
 		{
@@ -1991,24 +2212,8 @@ window.addEventListener( 'load', () => {
 				.replace( /\$username\$/g, limit( 'username', luser, user ) )
 				.replace( /\$message\$/g, limit( 'message', lmessage, user ) );
 
-			var user_name = user.toLowerCase();
-			var repeat_value = parseInt( irepeat.value );
-			if ( typeof( users[ user_name ] ) !== 'undefined' && typeof( users[ user_name ].repeat ) !== 'undefined' )
-				repeat_value = parseInt( users[ user_name ].repeat );
-
-			if ( repeat[ 0 ] > 0 && repeat[ 1 ] == extra.userId )
-			{
-				if ( repeat[ 0 ] > repeat_value )
-					repeat[ 0 ] = repeat_value;
-
-				--repeat[ 0 ];
-				text = limit( 'message', lmessage, user );
-			}
-			else
-				repeat = [ repeat_value, extra.userId ]
-
 			if ( text )
-				speech( text, false, user, flags );
+				speech( text, false, user, flags, extra );
 		}
 	}
 
@@ -2246,36 +2451,59 @@ window.addEventListener( 'load', () => {
 
 		bdisconnect.disabled = false;
 
-		chat( language[ 2 ].chat.connected.replace( /\$channel_name\$/g, channel[ 0 ] ), undefined, { connected: true } );
+		var channel_all = [ channel[ 0 ] ].concat( channels ).join( ', ' );
+		chat( language[ 2 ].chat.connected.replace( /\$channel_name\$/g, channel_all ), undefined, { connected: true } );
 		update();
 
-		if ( channel[ 0 ] && !channel[ 1 ] )
+		var tchannel = channel[ 0 ];
+		if ( tchannel )
 		{
-			var tchannel = channel[ 0 ];
-			var channel_name = encodeURIComponent( tchannel );
-			request( `https://api.twitch.tv/kraken/users?login=${channel_name}` )
-				.then( ( data ) => {
-					try
-					{
-						if ( channel[ 0 ] && channel[ 0 ] == tchannel )
+			if ( !channel[ 1 ] )
+			{
+				var channel_name = encodeURIComponent( tchannel );
+				request( `https://api.twitch.tv/kraken/users?login=${channel_name}` )
+					.then( ( data ) => {
+						try
 						{
-							channel[ 1 ] = data.users[ 0 ]._id;
-							channel_infos( channel[ 1 ], ( data ) => {
-								if ( channel[ 0 ] && channel[ 0 ] == tchannel )
-								{
-									infos = data;
-									update();
-								}
-							} );
+							if ( channel[ 0 ] && channel[ 0 ] == tchannel )
+							{
+								channel[ 1 ] = data.users[ 0 ]._id;
+								channel_infos( channel[ 1 ], ( data ) => {
+									if ( channel[ 0 ] && channel[ 0 ] == tchannel )
+									{
+										infos = data;
+										update();
+									}
+								} );
+							}
+						} catch ( e ) {
+							disconnect( 'Channel $channel$ not found !' );
 						}
-					} catch ( e ) {
-						disconnect( 'Channel $channel$ not found !' );
-					}
-				} )
-				.catch( ( error ) => {
-					console.error( 'connect:', error );
-					disconnect();
-				} );
+					} )
+					.catch( ( error ) => {
+						console.error( 'connect:', error );
+						disconnect();
+					} );
+			}
+
+			channels.forEach( ( channel_name ) => {
+				channel_name = encodeURIComponent( channel_name );
+				request( `https://api.twitch.tv/kraken/users?login=${channel_name}` )
+					.then( ( data ) => {
+						try
+						{
+							var channel_id = data.users[ 0 ]._id;
+							if ( typeof( logos[ channel_id ] ) === 'undefined' || !logos[ channel_id ][ 1 ] )
+							{
+								channel_infos( channel_id, ( data ) => {
+									channel_logo( data._id, data, ( channel_id, data, logo ) => {
+										// change chat logos
+									} );
+								} );
+							}
+						} catch ( e ) {}
+					} );
+			} );
 		}
 	};
 
@@ -2288,7 +2516,7 @@ window.addEventListener( 'load', () => {
 
 	ComfyJS.onError = ( error ) => { // Hook for Errors
 		var message = '';
-		if ( typeof( error ) === 'string' && error.indexOf( 'Login authentication failed' ) >= 0 )
+		if ( typeof( error ) === 'string' && ( error.indexOf( 'Login authentication failed' ) >= 0 || error.indexOf( 'Invalid NICK' ) >= 0 ) )
 			message = language[ 2 ].errors.twitch.auth;
 
 		if ( message )
@@ -2442,6 +2670,17 @@ window.addEventListener( 'load', () => {
 	audios[ 1 ].volume = .2;
 
 	nosleep = new NoSleep();
+
+	var observer = new MutationObserver( ( mutations ) => {
+		mutations.forEach( ( mutation ) => {
+			var elem = mutation.target;
+			if ( elem.getAttribute( 'data-original-show' ) == '1' )
+			{
+				elem.Tooltip.hide();
+				setTimeout( () => { elem.Tooltip.show(); }, 500 );
+			}
+		} );
+	} );
 
 	init();
 } );

@@ -25,6 +25,8 @@
 		"connection": {
 			"title":			"Connection",
 			"channel":			"Channel",
+			"add":				"Add a channel",
+			"delete":			"Remove the channel",
 			"connect":			"Connect",
 			"disconnect":		"Disconnect",
 			"more": {
@@ -110,6 +112,10 @@
 				"title":		"Timestamp",
 				"help":			"Displays the time in front of each message"
 			},
+			"logos": {
+				"title":		"Channel Logos",
+				"help":			"Displays the channel logo in front of each message"
+			},
 			"autoscroll": {
 				"title":		"Automatic Scroll",
 				"help":			"Automatically scroll to the last message"
@@ -127,7 +133,7 @@
 			"gift_renew":		"Resubstribe $gifter$ : $recipient$",
 			"connected":		"Connected to the $channel_name$ channel",
 			"reconnection":		"Reconnection in progress ...",
-			"disconnected":		"Disconnected from the $channel$ channel"
+			"disconnected":		"Disconnected from the $channel_name$ channel"
 		},
 		"iofile": {
 			"title":			"Configuration",
@@ -250,6 +256,8 @@
 		"connection": {
 			"title":			"Connexion",
 			"channel":			"Chaine",
+			"add":				"Ajouter une chaîne",
+			"delete":			"Enlever la chaîne",
 			"connect":			"Connecter",
 			"disconnect":		"Déconnecter",
 			"more": {
@@ -335,6 +343,10 @@
 				"title":		"Horodatage",
 				"help":			"Affiche l'heure devant chaque message"
 			},
+			"logos": {
+				"title":		"Logos de Chaîne",
+				"help":			"Affiche le logo de la chaine devant chaque message"
+			},
 			"autoscroll": {
 				"title":		"Défilement Auto",
 				"help":			"Faire défiler automatiquement jusqu'au dernier message"
@@ -355,7 +367,7 @@
 			"gift_renew":		"Réabonnement Offert $gifter$ : $recipient$",
 			"connected":		"Connecté à la chaîne $channel_name$",
 			"reconnection":		"Reconnexion en cours ...",
-			"disconnected":		"Déconnecté de la chaîne $channel$"
+			"disconnected":		"Déconnecté de la chaîne $channel_name$"
 		},
 		"iofile": {
 			"title":			"Configuration",
