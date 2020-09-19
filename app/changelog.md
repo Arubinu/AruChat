@@ -40,3 +40,7 @@ v0.0.54:
  - Fix from clipboard (app)
  - Launch only one instance (app)
  - Add the button to reload the application in the systray (app)
+
+v0.0.55:
+ - Fix Speech error caused by nonexistent variable
+ - Fix 'Repetition Name' which was not taken into account

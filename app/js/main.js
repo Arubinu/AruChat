@@ -1000,7 +1000,7 @@ window.addEventListener( 'load', () => {
 				if ( inchat || !line.length )
 					return ;
 
-				var [ text, user, flags, extra ] = line.shift();
+				var [ text, user, flags, extra, message ] = line.shift();
 				if ( user && !user_get( user ) && flags )
 				{
 					var mod = ( flags.mod && !umod.checked );
@@ -1012,7 +1012,7 @@ window.addEventListener( 'load', () => {
 						return ;
 				}
 
-				speech( text, true, user, flags, extra );
+				speech( text, true, user, flags, extra, message );
 			}, 50 );
 
 			channel_next();
@@ -1913,11 +1913,13 @@ window.addEventListener( 'load', () => {
 	 * @param	{Object}			[force]				Force the message to be read
 	 * @param	{string}			[user]				Twitch username
 	 * @param	{Object}			[flags]				User-related flags
+	 * @param	{Object}			[extra]				User-related extra
+	 * @param	{string}			[message]			Message only
 	 */
-	function speech( text, force, user, flags, extra )
+	function speech( text, force, user, flags, extra, message )
 	{
 		if ( !force )
-			return ( line.push( [ text, user, flags, extra ] ) );
+			return ( line.push( [ text, user, flags, extra, message ] ) );
 		if ( !msg || !text )
 			return ;
 
@@ -1958,12 +1960,6 @@ window.addEventListener( 'load', () => {
 		if ( data.ascii )
 			text = text.replace( /[^\040-\176\200-\377]/gi, '' );
 
-		msg.rate = ( parseInt( data.rate * 100 ) / 100 );
-		msg.pitch = ( parseInt( data.pitch * 100 ) / 100 );
-		msg.volume = ( parseInt( data.volume * 100 ) / 100 );
-		msg.voice = data.voice[ 1 ];
-		msg.text = text;
-
 		var flooding = ( 100 - data.flooding );
 		if ( !msg.volume || ( user && flooding < 100 && FloodDetector.evaluate( text, flooding ) ) )
 			return ( inchat = false );
@@ -1974,17 +1970,23 @@ window.addEventListener( 'load', () => {
 			if ( tuser && typeof( tuser.repeat ) !== 'undefined' )
 				repeat_value = parseInt( tuser.repeat );
 
-			if ( extra && repeat[ 0 ] > 0 && repeat[ 1 ] == extra.userId )
+			if ( extra && repeat[ 0 ] > 0 && repeat[ 1 ] == extra.userId && message )
 			{
 				if ( repeat[ 0 ] > repeat_value )
 					repeat[ 0 ] = repeat_value;
 
 				--repeat[ 0 ];
-				text = limit( 'message', lmessage, user );
+				text = message;
 			}
 			else
 				repeat = [ repeat_value, ( extra ? extra.userId : '' ) ];
 		}
+
+		msg.rate = ( parseInt( data.rate * 100 ) / 100 );
+		msg.pitch = ( parseInt( data.pitch * 100 ) / 100 );
+		msg.volume = ( parseInt( data.volume * 100 ) / 100 );
+		msg.voice = data.voice[ 1 ];
+		msg.text = text;
 
 		window.speechSynthesis.speak( msg );
 	}
@@ -2213,7 +2215,7 @@ window.addEventListener( 'load', () => {
 				.replace( /\$message\$/g, limit( 'message', lmessage, user ) );
 
 			if ( text )
-				speech( text, false, user, flags, extra );
+				speech( text, false, user, flags, extra, limit( 'message', lmessage, user ) );
 		}
 	}
 
@@ -2674,7 +2676,7 @@ window.addEventListener( 'load', () => {
 	var observer = new MutationObserver( ( mutations ) => {
 		mutations.forEach( ( mutation ) => {
 			var elem = mutation.target;
-			if ( elem.getAttribute( 'data-original-show' ) == '1' )
+			if ( elem.getAttribute( 'data-original-show' ) == '1' && typeof( elem.Tooltip ) !== 'undefined' )
 			{
 				elem.Tooltip.hide();
 				setTimeout( () => { elem.Tooltip.show(); }, 500 );
