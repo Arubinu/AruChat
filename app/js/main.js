@@ -794,6 +794,9 @@ window.addEventListener( 'load', () => {
 
 								loading.remove();
 							} );
+
+							var users = '<u>' + [ 'Furiiouzz60', 'Loppeur', 'ToxicRebirth' ].join( '</u>, <u>' ) + '</u>';
+							loading.querySelector( '.thanks' ).innerHTML = language[ 2 ].thanks.replace( '%s', users );
 						} )
 						.catch( ( error ) => {
 							console.error( 'templates:', error );
@@ -2063,6 +2066,11 @@ window.addEventListener( 'load', () => {
 			} );
 		}
 
+		msg.rate = ( parseInt( data.rate * 100 ) / 100 );
+		msg.pitch = ( parseInt( data.pitch * 100 ) / 100 );
+		msg.volume = ( parseInt( data.volume * 100 ) / 100 );
+		msg.voice = data.voice[ 1 ];
+
 		if ( data.ascii )
 			text = text.replace( /[^\040-\176\200-\377]/gi, '' );
 
@@ -2088,10 +2096,6 @@ window.addEventListener( 'load', () => {
 				repeat = [ repeat_value, ( extra ? extra.userId : '' ) ];
 		}
 
-		msg.rate = ( parseInt( data.rate * 100 ) / 100 );
-		msg.pitch = ( parseInt( data.pitch * 100 ) / 100 );
-		msg.volume = ( parseInt( data.volume * 100 ) / 100 );
-		msg.voice = data.voice[ 1 ];
 		msg.text = text;
 
 		window.speechSynthesis.speak( msg );

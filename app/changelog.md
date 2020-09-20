@@ -49,3 +49,7 @@ v0.0.56:
  - Fix the slider when the volume is at 0
  - Prevents the channel logo from changing size
  - Added a tooltip on the user to manage it quickly
+
+v0.0.57:
+ - Add acknowledgments for Streamers who helped debug
+ - Fix the volume problem that cuts everything when you set a volume to 0

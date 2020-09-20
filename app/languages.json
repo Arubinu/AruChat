@@ -219,6 +219,7 @@
 			"speech":			"Small test of Text To Speech :)"
 		},
 		"loading":				"Click to continue ...",
+		"thanks":				"Thanks: %s",
 		"viewers":				"Viewers",
 		"followers":			"Followers",
 		"languages": {
@@ -453,6 +454,7 @@
 			"speech":			"Petit teste de Text To Speech :)"
 		},
 		"loading":				"Cliquez pour continuer ...",
+		"thanks":				"Remerciements: %s",
 		"viewers":				"Spectateurs",
 		"followers":			"Followers",
 		"languages": {

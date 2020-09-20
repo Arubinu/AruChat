@@ -432,12 +432,20 @@ img.navbar-brand {
 	z-index: 1031;
 }
 
-#loading div {
+#loading div:first-child {
 	margin: auto;
 	margin-top: 50vh;
 	font-size: 20px;
 	text-align: center;
 	transform: translateY(-50%);
+}
+#loading div.thanks {
+	position: fixed;
+	bottom: 10px;
+	left: 0px;
+	right: 0px;
+	text-align: center;
+	cursor: default;
 }
 
 #loading i {
