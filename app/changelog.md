@@ -44,3 +44,8 @@ v0.0.54:
 v0.0.55:
  - Fix Speech error caused by nonexistent variable
  - Fix 'Repetition Name' which was not taken into account
+
+v0.0.56:
+ - Fix the slider when the volume is at 0
+ - Prevents the channel logo from changing size
+ - Added a tooltip on the user to manage it quickly

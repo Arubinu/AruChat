@@ -226,6 +226,18 @@ overflow: hidden;
 	color: #888;
 }
 
+.tooltip {
+	cursor: default;
+}
+.tooltip-inner > * {
+	display: inline;
+}
+
+.user-options i {
+	vertical-align: -1px;
+	cursor: pointer;
+}
+
 .modal .modal-content {
 	background-color: rgb( 69, 75, 87 ) !important;
 	border-color: rgb( 47, 53, 66 ) !important;
@@ -520,7 +532,7 @@ img.navbar-brand {
 	height: 18px;
 	line-height: 18px;
 }
-#chat > ul > li.emotes:hover img:not(.flag) {
+#chat > ul > li.emotes:hover img:not(.logo):not(.flag) {
 	margin-top: -5px;
 	margin-bottom: -5px;
 	height: 28px;

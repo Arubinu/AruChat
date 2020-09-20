@@ -23,7 +23,6 @@ window.addEventListener( 'load', () => {
 		channel		= [ '', '' ],
 		nosleep		= null,
 		channels	= [],
-		excludes	= [],
 		language	= null,
 		onscroll	= [ false, true ],
 		followers	= [ 0, null ],
@@ -127,17 +126,6 @@ window.addEventListener( 'load', () => {
 			var tmp = JSON.parse( localStorage.getItem( 'channels' ) );
 			if ( Array.isArray( tmp ) )
 				channels = tmp;
-		} catch ( e ) {}
-
-		// obsolete
-		try
-		{
-			var tmp = localStorage.getItem( 'excludes' );
-			localStorage.removeItem( 'excludes' );
-
-			tmp = JSON.parse( tmp );
-			if ( Array.isArray( tmp ) )
-				tmp.forEach( ( user_name ) => { users[ user_name ] = { volume: 0 }; } );
 		} catch ( e ) {}
 
 		try
@@ -392,15 +380,18 @@ window.addEventListener( 'load', () => {
 		return ( elem.getAttribute( 'data-original-title' ) || elem.getAttribute( 'title' ) );
 	}
 
+	var title_count = 0;
 	/**
 	 * @desc Initializes the tooltips as well as their refresh
 	 * @param	{HTMLElement}		parent				Parent element grouping together all title attributes
 	 * @param	{string}			[placement]			Tooltip display direction
+	 * @param	{bool|string}		[preserve]			Guard displayed when mouse hovers over it (disabled by default)
 	 */
-	function title_set( parent, placement )
+	function title_set( parent, placement, preserve )
 	{
 		parent = ( parent || document.body );
 		Array.from( parent.querySelectorAll( '[title]' ) ).map( ( elem ) => {
+			var id = ++title_count;
 			var tplacement = placement;
 			if ( !tplacement )
 			{
@@ -410,6 +401,7 @@ window.addEventListener( 'load', () => {
 				tplacement = ( elem.classList.contains( 'tip-bottom' ) ? 'bottom' : tplacement );
 			}
 
+			elem.setAttribute( 'data-original-id', id );
 			new BSN.Tooltip( elem, { placement: tplacement, delay: 250 } );
 
 			observer.observe( elem, {
@@ -418,15 +410,73 @@ window.addEventListener( 'load', () => {
 			} );
 			elem.addEventListener( 'show.bs.tooltip', ( event ) => {
 				elem.setAttribute( 'data-original-show', '1' );
-				document.querySelectorAll( '.tooltip' ).forEach( ( tip ) => {
-					tip.addEventListener( 'click', () => {
-						tip.classList.remove( 'show' );
-						setTimeout( () => { tip.remove(); }, 1000 );
-					} );
+			} );
+			elem.addEventListener( 'shown.bs.tooltip', ( event ) => {
+				var tips = [ ...document.querySelectorAll( '.tooltip' ) ];
+				tips.forEach( ( tip, index ) => {
+					if ( index == ( tips.length - 1 ) )
+					{
+						tip.setAttribute( 'data-original-id', id );
+						if ( !preserve && !tip.getAttribute( 'data-original-action' ) )
+						{
+							tip.addEventListener( 'click', () => {
+								tip.classList.remove( 'show' );
+								setTimeout( () => { tip.remove(); }, 1000 );
+							} );
+						}
+					}
+					tip.setAttribute( 'data-original-action', 1 );
 				} );
 			} );
 			elem.addEventListener( 'hide.bs.tooltip', ( event ) => {
 				elem.setAttribute( 'data-original-show', '0' );
+				var tip = document.querySelector( `.tooltip[data-original-id="${id}"]` );
+				if ( !preserve || !tip || ( typeof( preserve ) === 'string' && !elem.matches( preserve ) ) )
+					return ;
+
+				var clone = tip.cloneNode( true );
+				clone.classList.add( 'show', 'clone' );
+				tip.parentNode.insertBefore( clone, tip.nextSibling );
+
+				var div = clone.querySelector( '.tooltip-inner div' );
+				if ( div )
+				{
+					var odiv = tip.querySelector( '.tooltip-inner div' );
+					div.replaceWith( odiv );
+				}
+
+				var hide = () => {
+					clone.classList.remove( 'show' );
+					setTimeout( () => { clone.remove(); }, 1000 );
+				};
+				var timeout = setTimeout( hide, 200 );
+
+				[ clone, ...clone.querySelectorAll( '*' ) ].forEach( ( elem ) => {
+					elem.addEventListener( 'mousemove', () => {
+						if ( timeout )
+						{
+							clearTimeout( timeout );
+							timeout = 0;
+						}
+					}, true );
+				} );
+				clone.addEventListener( 'mouseout', ( event ) => {
+					var e = ( event.toElement || event.relatedTarget );
+					while ( e && e.parentNode && e.parentNode != window )
+					{
+						if ( e.parentNode == clone || e == clone )
+						{
+							if ( e.preventDefault )
+								e.preventDefault();
+
+							return ( false );
+						}
+
+						e = e.parentNode;
+					}
+
+					hide();
+				}, true );
 			} );
 		} );
 	}
@@ -1008,7 +1058,7 @@ window.addEventListener( 'load', () => {
 					var broadcaster = ( flags.broadcaster && !ubroadcaster.checked );
 					var normal = ( !flags.mod && !flags.subscriber && !flags.broadcaster && !unormal.checked );
 
-					if ( mod || subscriber || broadcaster || normal || excludes.indexOf( user.toLowerCase() ) >= 0 )
+					if ( mod || subscriber || broadcaster || normal )
 						return ;
 				}
 
@@ -1336,24 +1386,25 @@ window.addEventListener( 'load', () => {
 	 * @desc Allows you to manage the settings of a particular user
 	 * @param	{string}			user_name			User name to add
 	 * @param	{bool}				[force]				Allows you to initialize the interface with existing users
+	 * @return	{(false|Object)}						User object
 	 */
 	function user_add( user_name, force )
 	{
 		iuser.focus();
 		user_name = ( ( typeof( user_name ) === 'string' ) ? user_name : iuser.value ).trim().toLowerCase();
 		if ( !user_name )
-			return ;
+			return ( false );
 
 		var tuser = user_get( user_name );
 		if ( force !== true )
 		{
 			if ( tuser )
-				return ;
+				return ( tuser );
 
 			users[ user_name ] = { name: user_name };
 		}
 		else if ( !tuser || typeof( tuser.name ) === 'undefined' || !tuser.name )
-			return ;
+			return ( false );
 
 		ksettings.forEach( ( key ) => {
 			if ( typeof( users[ user_name ][ key ] ) === 'undefined' )
@@ -1544,15 +1595,27 @@ window.addEventListener( 'load', () => {
 		var buttons = li.querySelectorAll( 'i' );
 		buttons[ 0 ].addEventListener( 'click', manage );
 		buttons[ 1 ].addEventListener( 'click', function() {
-			delete users[ user_name ];
-			li.remove();
-
+			user_del( user_name );
 			this.Tooltip.dispose();
 		} );
 		title_set( li );
 
 		iuser.value = '';
 		user_search();
+
+		return ( users[ user_name ] );
+	}
+
+	/**
+	 * @desc Delete a specific user from the manager
+	 * @param	{string}			user_name			User name to delete
+	 */
+	function user_del( user_name )
+	{
+		delete users[ user_name ];
+		var li = document.querySelector( `.users [data-user="${user_name}"]` );
+		if ( li )
+			li.remove();
 	}
 
 	var user_timeout = 0;
@@ -1897,7 +1960,50 @@ window.addEventListener( 'load', () => {
 		onscroll[ 0 ] = true;
 		var li = html( templates.message( Object.assign( {}, { data: obj }, language[ 2 ] ) ), true );
 		dchat.appendChild( li );
-		title_set( li );
+		title_set( li, undefined, '.username, .user' );
+
+		var users = li.querySelectorAll( '.username[data-original-id], .user[data-original-id]' );
+		if ( users )
+		{
+			users.forEach( ( elem ) => {
+				var user_name = elem.innerText.trim().toLowerCase();
+				elem.addEventListener( 'shown.bs.tooltip', ( event ) => {
+					var id = elem.getAttribute( 'data-original-id' );
+					var tips = [ ...document.querySelectorAll( `.tooltip[data-original-id="${id}"] .tooltip-inner` ) ];
+					if ( id && tips.length )
+					{
+						var tip = tips.slice( -1 )[  0 ];
+						if ( !tip.querySelector( 'div' ) )
+						{
+							var obj = { user: user_get( user_name ) };
+							var options = html( templates.user_options( Object.assign( { data: obj }, language[ 2 ] ) ), true );
+							tip.appendChild( options );
+
+							var get_trash = () => {
+								return ( options.querySelector( '.fa-trash-alt' ) );
+							};
+
+							options.querySelector( '.fa-check' ).addEventListener( 'click', ( event ) => {
+								get_trash().style.display = 'initial';
+								var tuser = user_add( user_name );
+								if ( tuser )
+									tuser.volume = undefined;
+							} );
+							options.querySelector( '.fa-ban' ).addEventListener( 'click', ( event ) => {
+								get_trash().style.display = 'initial';
+								var tuser = user_add( user_name );
+								if ( tuser )
+									tuser.volume = '0';
+							} );
+							get_trash().addEventListener( 'click', ( event ) => {
+								get_trash().style.display = 'none';
+								user_del( user_name );
+							} );
+						}
+					}
+				} );
+			} );
+		}
 
 		var dchat_parent = dchat.parentNode;
 		if ( iautoscroll.checked && onscroll[ 1 ] )
@@ -2119,6 +2225,7 @@ window.addEventListener( 'load', () => {
 			if ( item[ 0 ] == 'user' )
 			{
 				elem = document.createElement( 'span' );
+				elem.title = text.substr( 1 );
 				elem.innerText = text.substr( 1 );
 
 				speech_msg = speech_msg.slice( 0, item[ 2 ] ) + text.substr( 1 ) + speech_msg.slice( item[ 3 ] );
