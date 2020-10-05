@@ -1,5 +1,8 @@
-# AruChat (TextToSpeed)
+# AruChat (TextToSpeech)
 Keep an ear on a Twitch stream chat !
+
+This tool is not intended to manage your Twitch channel.
+
 
 Find the site without installation here: http://aruchat.pergens.fr
 
@@ -18,11 +21,6 @@ __This project uses different projects to operate__:
  - electron-builder: https://github.com/electron-userland/electron-builder
 
 ## Audio Output Redirection
-To do this, you will need to change the audio output at each launch:
- - In the System Tray, right-click on the sound icon,
- - Select ___'Open Sound settings'___,
- - Then choose ___'App volume and device preferences'___,
- - Set the default output for AruChat if it is not already,
- - Finally choose the output you want.
+After changing the output from Windows, right-click on the AruChat icon in the ___'System Tray'___ then choose ___'Reload'___.
 
-Note that in the case of VoiceMeeter, you will need to ___'Restart Audio Engine'___ after this procedure (from the Menu button).
+Once the redirection is effective, for the example of VoiceMeeter, you must do ___'Menu'___ then ___'Restart Audio Engine'___ each time AruChat is launched.

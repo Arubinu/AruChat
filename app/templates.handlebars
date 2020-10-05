@@ -168,7 +168,7 @@
 			{{# each data }}
 			<tr class="table-active">
 				<th scope="row">{{ word }}</th>
-				<td><input type="text" value="{{ replace }}" placeholder="{{ ../modals.words.placeholder }}" class="input-transparent" /></td>
+				<td><input type="text" value="{{ replacement }}" placeholder="{{ ../modals.words.placeholder }}" class="input-transparent" /></td>
 				<td class="text-center" style="user-select: none;">
 					<i class="fas fa-user{{ or ( and ( or ( eq mode 1 ) ( eq mode 3 ) ) ' enabled' ) '' }}" title="{{ ../modals.words.user }}"></i>
 					<i class="fas fa-comment-dots{{ or ( and ( or ( eq mode 2 ) ( eq mode 3 ) ) ' enabled' ) '' }}" title="{{ ../modals.words.message }}"></i>
@@ -187,8 +187,8 @@
 			<a href="." class="navbar-brand">{{ site.name }}</a>
 			<div>
 				<ul class="navbar-nav navbar-right">
-					<li title="{{ viewers }}"><span class="viewers">-</span> <i class="fas fa-users"></i></li>
-					<li title="{{ followers }}"><span class="followers">-</span> <i class="fas fa-id-badge"></i></li>
+					<li title="{{ viewers.name }}"><span class="viewers">-</span> <i class="fas fa-users"></i></li>
+					<li title="{{ followers.name }}"><span class="followers">-</span> <i class="fas fa-id-badge"></i></li>
 					<li title="{{ languages.title }}" class="dropdown dropdown-toggle languages" data-toggle="dropdown" id="languages-menu">
 						<i class="fas fa-globe"></i>
 					</li>
@@ -212,9 +212,12 @@
 			<div class="tip-left" title="{{ page_up }}">&lsaquo;</div>
 			<div class="tip-left" title="{{ page_down }}">&rsaquo;</div>
 			<div class="tip-left" title="{{ scroll_bottom }}">&raquo;</div>
-			<hr />
-			<div class="tip-left reverse" style="margin-left: 10px;" title="{{ lateral }}"><i class="fas fa-cog"></i></div>
-			<div class="tip-left reverse" title="Clear Chat"><i class="fas fa-trash-alt"></i></div>
+			<hr style="margin-left: -2px;" />
+			<div class="tip-left reverse" title="{{ viewers.name }}"><i class="fas fa-users"></i></div>
+			<div class="tip-left reverse" title="{{ followers.name }}"><i class="fas fa-id-badge"></i></div>
+			<hr style="margin-left: -7px;" />
+			<div class="tip-left reverse" style="margin-left: 5px;" title="{{ lateral }}"><i class="fas fa-cog"></i></div>
+			<div class="tip-left reverse" title="{{ clear_cache }}"><i class="fas fa-trash-alt"></i></div>
 		</div>
 
 		<ul></ul>
@@ -391,209 +394,285 @@
 	</li>
 </template>
 
-<template id="settings">
-	<div id="settings" class="text-center">
-		<ul class="menu">
-			<li data-menu=".connection" title="{{ connection.title }}"><i class="fas fa-house-user"></i></li>
-			<li data-menu=".users" title="{{ users.title }}"><i class="fas fa-users"></i></li>
-			<li data-menu=".voice" title="{{ voice.title }}"><i class="fas fa-assistive-listening-systems"></i></li>
-			<li data-menu=".chat" title="{{ chat.title }}"><i class="fas fa-comments"></i></li>
-			<li data-menu=".iofile" title="{{ iofile.title }}"><i class="fas fa-save"></i></li>
-		</ul>
-		<ul class="connection">
-			<li>
-				<div class="title">{{ connection.channel }}</div>
-				<div class="value">
-					<i class="fas fa-splotch" title="{{ connection.more.title }}"></i>
-					<input name="channel" type="text" class="form-control form-control-sm" />
+<template id="viewers">
+	{{# if data.chatters }}
+		{{# each data.keys }}
+			{{# if ( count ( array-get this ../data.chatters ) ) }}
+				<div class="category">
+					<div><span data-viewers="{{ this }}">...</span> / {{ count ( array-get this ../data.chatters ) }}</div>
+					{{ or ( array-get this ../viewers.keys ) this }}
 				</div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ connection.audio.help }}">{{ connection.audio.title }}</div>
-				<div class="value">
-					<div class="custom-control custom-switch">
-						<input name="audio" type="checkbox" class="custom-control-input" id="audio" checked />
-						<label class="custom-control-label" for="audio"></label>
-					</div>
-				</div>
-			</li>
-			<li class="separator">
-				<button name="add" type="button" class="btn btn-sm btn-primary">{{ connection.add }}</button>
-				<button name="connect" type="button" class="btn btn-sm btn-primary">{{ connection.connect }}</button>
-				<button name="disconnect" type="button" class="btn btn-sm btn-primary" disabled>{{ connection.disconnect }}</button>
-			</li>
-		</ul>
-		<ul class="users clear">
-			<li>
-				<div class="btn-group">
-					<div class="form-check">
-						<label class="form-check-label" title="{{ users.normal }}">
-							<input name="users_normal" class="form-check-input" type="checkbox" checked />
-							<i class="fas fa-male"></i>
-						</label>
-					</div>
-					<div class="form-check">
-						<label class="form-check-label" title="{{ users.broadcaster }}">
-							<input name="users_broadcaster" class="form-check-input" type="checkbox" checked />
-							<i class="fas fa-user-circle"></i>
-						</label>
-					</div>
-					<div class="form-check">
-						<label class="form-check-label" title="{{ users.moderators }}">
-							<input name="users_mod" class="form-check-input" type="checkbox" checked />
-							<i class="fas fa-wrench"></i>
-						</label>
-					</div>
-					<div class="form-check">
-						<label class="form-check-label" title="{{ users.subscibers }}">
-							<input name="users_subscriber" class="form-check-input" type="checkbox" checked />
-							<i class="fas fa-heart"></i>
-						</label>
-					</div>
-				</div>
-			</li>
-			<li>
-				<div class="title"><input name="user" type="text" class="btn btn-sm btn-primary" placeholder="{{ users.search }}" /></div>
-				<div class="value"><i class="fas fa-user-plus" title="{{ users.add }}"></i></div>
-			</li>
-			<li>
+	<ul data-viewers="{{ this }}">
+				{{# each ( array-get this ../data.chatters ) }}
+		<li style="display: {{ or ( and ( or ( not ../../data.filter ) ( in ../../data.filter this ) ) 'inline-block' ) 'none' }}">
+			<a href="https://www.twitch.tv/{{ lower this }}" target="_blank" class="username tip-left" title="{{ this }}" data-username="{{ lower this }}">{{ this }}</a>
+		</li>
+				{{/ each }}
+	</ul>
+			{{/ if }}
+		{{/ each }}
+	{{ else }}
+		{{ wait }}
+	{{/ if }}
+</template>
+
+<template id="followers">
+	<ul>
+	{{# each data.follows }}
+		{{ set 'date' ( slice this.created_at 0 10 ) }}
+		<li style="display: {{ or ( and ( and ( and ( or ( not data.filter ) ( in data.filter this.user.name ) ) ( gte ( get 'date' ) ../data.date_in ) ) ( lte ( get 'date' ) ../data.date_out ) ) 'inline-block' ) 'none' }}" data-username="{{ lower this.user.name }}" data-date="{{ slice this.created_at 0 10 }}">
+			<div class="left"><a href="https://www.twitch.tv/{{ lower this.user.name }}" target="_blank" class="username tip-left" title="{{ this.user.name }}">{{ this.user.display_name }}</a></div>
+			<div class="right">{{ replace ( replace this.created_at 'T' ' ' ) 'Z' '' }}</div>
+		</li>
+	{{/ each }}
+	</ul>
+</template>
+
+<template id="panel">
+	<div id="panel" class="text-center">
+		<div id="viewers">
+			<div class="viewers-title">
+				<h3>{{ viewers.title }}</h3>
+				<input name="filter" type="text" placeholder="{{ filter }}" class="form-control form-control-sm" />
 				<hr />
-			</li>
-		</ul>
-		<ul class="voice">
-			<li>
-				<div class="title">{{ voice.voice.title }}</div>
-				<div class="value">
-					<div name="voice" class="btn-group dropleft" title=" ">
-						<button type="button" class="btn btn-sm btn-primary">{{ voice.voice.button }}</button>
-						<div class="btn-group" role="group">
-							<button id="voice" type="button" class="btn btn-sm btn-primary dropdown-toggle"></button>
-							<div class="dropdown-menu" aria-labelledby="voice"></div>
+				<div class="gradient"></div>
+			</div>
+			<div class="viewers-list">{{ wait }}</div>
+		</div>
+		<div id="followers">
+			<div class="followers-title">
+				<h3>{{ followers.title }}</h3>
+				<ul class="twocol">
+					<li>
+						<div class="title">{{ date-in }}</div>
+						<div class="value"><input name="date-in" type="date" class="form-control form-control-sm" /></div>
+					</li>
+					<li>
+						<div class="title">{{ date-out }}</div>
+						<div class="value"><input name="date-out" type="date" class="form-control form-control-sm" /></div>
+					</li>
+					<li>
+						<div class="title"><input name="filter" type="text" placeholder="{{ filter }}" class="form-control form-control-sm" /></div>
+						<div class="value"><i class="fas fa-sync-alt" title="{{ refresh }}"></i></div>
+					</li>
+				</ul>
+				<hr />
+				<div class="gradient"></div>
+			</div>
+			<div class="followers-list">{{ wait }}</div>
+		</div>
+		<div id="settings">
+			<ul class="menu">
+				<li data-menu=".connection" title="{{ connection.title }}"><i class="fas fa-house-user"></i></li>
+				<li data-menu=".users" title="{{ users.title }}"><i class="fas fa-users"></i></li>
+				<li data-menu=".voice" title="{{ voice.title }}"><i class="fas fa-assistive-listening-systems"></i></li>
+				<li data-menu=".chat" title="{{ chat.title }}"><i class="fas fa-comments"></i></li>
+				<li data-menu=".iofile" title="{{ iofile.title }}"><i class="fas fa-save"></i></li>
+			</ul>
+			<ul class="twocol connection">
+				<li>
+					<div class="title">{{ connection.channel }}</div>
+					<div class="value">
+						<i class="fas fa-splotch" title="{{ connection.more.title }}"></i>
+						<input name="channel" type="text" class="form-control form-control-sm" />
+					</div>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ connection.audio.help }}">{{ connection.audio.title }}</div>
+					<div class="value">
+						<div class="custom-control custom-switch">
+							<input name="audio" type="checkbox" class="custom-control-input" id="audio" checked />
+							<label class="custom-control-label" for="audio"></label>
 						</div>
 					</div>
-				</div>
-			</li>
-			<li>
-				<div class="title">{{ voice.rate }}</div>
-				<div class="value"><input name="rate" type="number" class="form-control form-control-sm" value="1" min=".1" max="10" step=".1" /></div>
-			</li>
-			<li>
-				<div class="title">{{ voice.pitch }}</div>
-				<div class="value"><input name="pitch" type="number" class="form-control form-control-sm" value="0.8" min="0" max="2" step=".1" /></div>
-			</li>
-			<li>
-				<div class="title">{{ voice.volume.title }}</div>
-				<div class="value"><i class="fas fa-volume-mute"></i><input name="volume" type="range" class="custom-range" value="0.5" min="0" max="1" step=".01" title=" " /></div>
-			</li>
-			<li>
-				<hr />
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ voice.sentences.help }}">{{ voice.sentences.title }}</div>
-				<div class="value"><button name="sentences" type="button" class="btn btn-sm btn-primary">{{ manage.normal }}</button></div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ voice.words.help }}">{{ voice.words.title }}</div>
-				<div class="value"><button name="words" type="button" class="btn btn-sm btn-primary">{{ manage.normal }}</button></div>
-			</li>
-			<li>
-				<hr />
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ voice.links.help }}">{{ voice.links.title }}</div>
-				<div class="value">
-					<div class="custom-control custom-switch">
-						<input name="links" type="checkbox" class="custom-control-input" id="links" checked />
-						<label class="custom-control-label" for="links"></label>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ connection.ontop.help }}">{{ connection.ontop.title }}</div>
+					<div class="value">
+						<div class="custom-control custom-switch">
+							<input name="ontop" type="checkbox" class="custom-control-input" id="ontop" />
+							<label class="custom-control-label" for="ontop"></label>
+						</div>
 					</div>
-				</div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ voice.emotes.help }}">{{ voice.emotes.title }}</div>
-				<div class="value">
-					<div class="custom-control custom-switch">
-						<input name="emotes" type="checkbox" class="custom-control-input" id="emotes" checked />
-						<label class="custom-control-label" for="emotes"></label>
+				</li>
+				<li class="separator">
+					<button name="add" type="button" class="btn btn-sm btn-primary">{{ connection.add }}</button>
+					<button name="connect" type="button" class="btn btn-sm btn-primary">{{ connection.connect }}</button>
+					<button name="disconnect" type="button" class="btn btn-sm btn-primary" disabled>{{ connection.disconnect }}</button>
+				</li>
+			</ul>
+			<ul class="twocol users clear">
+				<li>
+					<div class="btn-group">
+						<div class="form-check">
+							<label class="form-check-label" title="{{ users.normal }}">
+								<input name="users_normal" class="form-check-input" type="checkbox" checked />
+								<i class="fas fa-male"></i>
+							</label>
+						</div>
+						<div class="form-check">
+							<label class="form-check-label" title="{{ users.broadcaster }}">
+								<input name="users_broadcaster" class="form-check-input" type="checkbox" checked />
+								<i class="fas fa-user-circle"></i>
+							</label>
+						</div>
+						<div class="form-check">
+							<label class="form-check-label" title="{{ users.moderators }}">
+								<input name="users_mod" class="form-check-input" type="checkbox" checked />
+								<i class="fas fa-wrench"></i>
+							</label>
+						</div>
+						<div class="form-check">
+							<label class="form-check-label" title="{{ users.subscibers }}">
+								<input name="users_subscriber" class="form-check-input" type="checkbox" checked />
+								<i class="fas fa-heart"></i>
+							</label>
+						</div>
 					</div>
-				</div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ voice.ascii.help }}">{{ voice.ascii.title }}</div>
-				<div class="value">
-					<div class="custom-control custom-switch">
-						<input name="ascii" type="checkbox" class="custom-control-input" id="ascii" checked />
-						<label class="custom-control-label" for="ascii"></label>
+				</li>
+				<li>
+					<div class="title"><input name="user" type="text" class="btn btn-sm btn-primary" placeholder="{{ users.search }}" /></div>
+					<div class="value"><i class="fas fa-user-plus" title="{{ users.add }}"></i></div>
+				</li>
+				<li>
+					<hr />
+				</li>
+			</ul>
+			<ul class="twocol voice">
+				<li>
+					<div class="title">{{ voice.voice.title }}</div>
+					<div class="value">
+						<div name="voice" class="btn-group dropleft" title=" ">
+							<button type="button" class="btn btn-sm btn-primary">{{ voice.voice.button }}</button>
+							<div class="btn-group" role="group">
+								<button id="voice" type="button" class="btn btn-sm btn-primary dropdown-toggle"></button>
+								<div class="dropdown-menu" aria-labelledby="voice"></div>
+							</div>
+						</div>
 					</div>
-				</div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ voice.limit.usernames.help }}">{{ voice.limit.usernames.title }}</div>
-				<div class="value"><input name="lusernames" type="number" class="form-control form-control-sm" value="0" min="0" max="25" step="1" title=" " /></div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ voice.limit.messages.help }}">{{ voice.limit.messages.title }}</div>
-				<div class="value"><input name="lmessages" type="number" class="form-control form-control-sm" value="0" min="0" max="500" step="1" title=" " /></div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ voice.repeat.help }}">{{ voice.repeat.title }}</div>
-				<div class="value"><input name="repeat" type="number" class="form-control form-control-sm" value="1000" min="0" max="1000" step="1" title=" " /></div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ voice.flooding.help }}">{{ voice.flooding.title }}</div>
-				<div class="value"><i class="fas fa-ban"></i><input name="flooding" type="range" class="custom-range" min="0" max="100" step="1" title=" " /></div>
-			</li>
-			<li class="separator">
-				<button name="test" type="button" class="btn btn-sm btn-primary">{{ test.button }}</button>
-			</li>
-		</ul>
-		<ul class="chat">
-			<li>
-				<div class="title tip-left" title="{{ chat.timestamp.help }}">{{ chat.timestamp.title }}</div>
-				<div class="value">
-					<div class="custom-control custom-switch">
-						<input name="timestamp" type="checkbox" class="custom-control-input" id="timestamp" />
-						<label class="custom-control-label" for="timestamp"></label>
+				</li>
+				<li>
+					<div class="title">{{ voice.rate }}</div>
+					<div class="value"><input name="rate" type="number" class="form-control form-control-sm" value="1" min=".1" max="10" step=".1" /></div>
+				</li>
+				<li>
+					<div class="title">{{ voice.pitch }}</div>
+					<div class="value"><input name="pitch" type="number" class="form-control form-control-sm" value="0.8" min="0" max="2" step=".1" /></div>
+				</li>
+				<li>
+					<div class="title">{{ voice.volume.title }}</div>
+					<div class="value"><i class="fas fa-volume-mute"></i><input name="volume" type="range" class="custom-range" value="0.5" min="0" max="1" step=".01" title=" " /></div>
+				</li>
+				<li>
+					<hr />
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ voice.sentences.help }}">{{ voice.sentences.title }}</div>
+					<div class="value"><button name="sentences" type="button" class="btn btn-sm btn-primary">{{ manage.normal }}</button></div>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ voice.words.help }}">{{ voice.words.title }}</div>
+					<div class="value"><button name="words" type="button" class="btn btn-sm btn-primary">{{ manage.normal }}</button></div>
+				</li>
+				<li>
+					<hr />
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ voice.links.help }}">{{ voice.links.title }}</div>
+					<div class="value">
+						<div class="custom-control custom-switch">
+							<input name="links" type="checkbox" class="custom-control-input" id="links" checked />
+							<label class="custom-control-label" for="links"></label>
+						</div>
 					</div>
-				</div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ chat.logos.help }}">{{ chat.logos.title }}</div>
-				<div class="value">
-					<div class="custom-control custom-switch">
-						<input name="logos" type="checkbox" class="custom-control-input" id="logos" />
-						<label class="custom-control-label" for="logos"></label>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ voice.emotes.help }}">{{ voice.emotes.title }}</div>
+					<div class="value">
+						<div class="custom-control custom-switch">
+							<input name="emotes" type="checkbox" class="custom-control-input" id="emotes" checked />
+							<label class="custom-control-label" for="emotes"></label>
+						</div>
 					</div>
-				</div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ chat.autoscroll.help }}">{{ chat.autoscroll.title }}</div>
-				<div class="value">
-					<div class="custom-control custom-switch">
-						<input name="autoscroll" type="checkbox" class="custom-control-input" id="autoscroll" />
-						<label class="custom-control-label" for="autoscroll"></label>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ voice.ascii.help }}">{{ voice.ascii.title }}</div>
+					<div class="value">
+						<div class="custom-control custom-switch">
+							<input name="ascii" type="checkbox" class="custom-control-input" id="ascii" checked />
+							<label class="custom-control-label" for="ascii"></label>
+						</div>
 					</div>
-				</div>
-			</li>
-		</ul>
-		<ul class="iofile">
-			<li>
-				<div class="title tip-left" title="{{ iofile.importer.help }}">{{ iofile.importer.title }}</div>
-				<div class="value">
-					<button name="import" type="button" class="btn btn-sm btn-primary">{{ iofile.importer.button }}</button>
-				</div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ iofile.exporter.help }}">{{ iofile.exporter.title }}</div>
-				<div class="value">
-					<button name="export" type="button" class="btn btn-sm btn-primary">{{ iofile.exporter.button }}</button>
-				</div>
-			</li>
-			<li>
-				<div class="title tip-left" title="{{ iofile.reset.help }}">{{ iofile.reset.title }}</div>
-				<div class="value">
-					<button name="reset" type="button" class="btn btn-sm btn-primary">{{ iofile.reset.button }}</button>
-				</div>
-			</li>
-		</ul>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ voice.limit.usernames.help }}">{{ voice.limit.usernames.title }}</div>
+					<div class="value"><input name="lusernames" type="number" class="form-control form-control-sm" value="0" min="0" max="25" step="1" title=" " /></div>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ voice.limit.messages.help }}">{{ voice.limit.messages.title }}</div>
+					<div class="value"><input name="lmessages" type="number" class="form-control form-control-sm" value="0" min="0" max="500" step="1" title=" " /></div>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ voice.repeat.help }}">{{ voice.repeat.title }}</div>
+					<div class="value"><input name="repeat" type="number" class="form-control form-control-sm" value="1000" min="0" max="1000" step="1" title=" " /></div>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ voice.flooding.help }}">{{ voice.flooding.title }}</div>
+					<div class="value"><i class="fas fa-ban"></i><input name="flooding" type="range" class="custom-range" min="0" max="100" step="1" title=" " /></div>
+				</li>
+				<li class="separator">
+					<button name="test" type="button" class="btn btn-sm btn-primary">{{ test.button }}</button>
+				</li>
+			</ul>
+			<ul class="twocol chat">
+				<li>
+					<div class="title tip-left" title="{{ chat.timestamp.help }}">{{ chat.timestamp.title }}</div>
+					<div class="value">
+						<div class="custom-control custom-switch">
+							<input name="timestamp" type="checkbox" class="custom-control-input" id="timestamp" />
+							<label class="custom-control-label" for="timestamp"></label>
+						</div>
+					</div>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ chat.logos.help }}">{{ chat.logos.title }}</div>
+					<div class="value">
+						<div class="custom-control custom-switch">
+							<input name="logos" type="checkbox" class="custom-control-input" id="logos" />
+							<label class="custom-control-label" for="logos"></label>
+						</div>
+					</div>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ chat.autoscroll.help }}">{{ chat.autoscroll.title }}</div>
+					<div class="value">
+						<div class="custom-control custom-switch">
+							<input name="autoscroll" type="checkbox" class="custom-control-input" id="autoscroll" />
+							<label class="custom-control-label" for="autoscroll"></label>
+						</div>
+					</div>
+				</li>
+			</ul>
+			<ul class="twocol iofile">
+				<li>
+					<div class="title tip-left" title="{{ iofile.importer.help }}">{{ iofile.importer.title }}</div>
+					<div class="value">
+						<button name="import" type="button" class="btn btn-sm btn-primary">{{ iofile.importer.button }}</button>
+					</div>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ iofile.exporter.help }}">{{ iofile.exporter.title }}</div>
+					<div class="value">
+						<button name="export" type="button" class="btn btn-sm btn-primary">{{ iofile.exporter.button }}</button>
+					</div>
+				</li>
+				<li>
+					<div class="title tip-left" title="{{ iofile.reset.help }}">{{ iofile.reset.title }}</div>
+					<div class="value">
+						<button name="reset" type="button" class="btn btn-sm btn-primary">{{ iofile.reset.button }}</button>
+					</div>
+				</li>
+			</ul>
+		</div>
 	</div>
 </template>

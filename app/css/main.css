@@ -58,17 +58,34 @@ html, body {
 body {
 	padding-top: 51px;
 }
+body.show-viewers > #chat,
+body.show-followers > #chat,
 body.show-settings > #chat {
 	width: calc( 100% - 320px );
 }
+body.show-viewers > #chat > .lateral,
+body.show-followers > #chat > .lateral,
 body.show-settings > #chat > .lateral {
-	right: calc( -61px + 320px );
+	right: calc( -90px + 320px );
 }
-body.show-settings > #settings {
+body.show-viewers > #panel,
+body.show-followers > #panel,
+body.show-settings > #panel {
 	right: 0px;
 }
+body.show-viewers .infos,
+body.show-followers .infos,
 body.show-settings .infos {
 	right: calc( 324px + 10px );
+}
+body.show-viewers > #panel > #viewers {
+	display: block;
+}
+body.show-followers > #panel > #followers {
+	display: block;
+}
+body.show-settings > #panel > #settings {
+	display: block;
 }
 
 hr {
@@ -80,6 +97,9 @@ input {
 	margin: 2px 0px;
 	height: 29px;
 	background-color: rgba( 255, 255, 255, .03 );
+}
+input::placeholder {
+	color: #666 !important;
 }
 button:not(.btn-secondary):not(.btn-success):not(.btn-info):not(.btn-warning):not(.btn-danger):not(.btn-link):not(.close):not(.page-link),
 .form-control,
@@ -166,7 +186,7 @@ button[disabled] {
 .infos {
 	position: fixed;
 	top: initial;
-	bottom: 10px;
+	bottom: 0px;
 	right: 10px;
 	height: calc( 4px + ( 10px * 2 ) + ( 42px + ( 3px * 2 ) ) );
 	opacity: 0;
@@ -183,10 +203,10 @@ button[disabled] {
 .infos .toast-body .toast-subbody {
 	margin-left: 10px;
 	margin-right: calc( 10px + ( 42px + ( 3px * 2 ) ) );
-	text-align: right;
-	line-height: 16px;
 	width: auto;
 	max-width: 250px;
+	text-align: right;
+	line-height: 16px;
 	text-overflow: ellipsis;
 	white-space: nowrap;
 	transition: margin 1s, max-width 1s;
@@ -372,6 +392,10 @@ img.navbar-brand {
 	color: #666 !important;
 }
 
+.form-control-sm {
+	height: 29px;
+}
+
 .custom-toggle {
 	position: relative;
 	display: inline-block;
@@ -454,7 +478,7 @@ img.navbar-brand {
 }
 
 #chat,
-#settings {
+#panel {
 	overflow-y: auto;
 	position: fixed;
 	margin: 0px auto;
@@ -463,14 +487,25 @@ img.navbar-brand {
 	height: calc( 100% - 51px );
 	transition: width 500ms, right 500ms;
 }
+#panel {
+	padding: 0px;
+}
+#viewers,
+#followers,
+#settings {
+	overflow: auto;
+	display: none;
+	padding: 15px;
+	height: calc( 100% - 15px );
+}
 .modal-body > ul,
 #chat > ul,
-#settings > ul {
+#panel ul.twocol {
 	padding-left: 0px;
 }
 .modal-body > ul > li,
 #chat > ul > li,
-#settings > ul > li {
+#panel ul.twocol > li {
 	clear: both;
 	list-style-type: none;
 }
@@ -495,7 +530,7 @@ img.navbar-brand {
 }
 .modal-body .separator,
 #chat .separator,
-#settings .separator {
+#panel .separator {
 	padding-top: 10px;
 }
 
@@ -506,11 +541,12 @@ img.navbar-brand {
 }
 #chat > .lateral {
 	position: fixed;
-	top: 122px;
-	right: -61px;
+	top: 149px;
+	right: -90px;
 	padding: 0px 1px 0px 8px;
 	font-size: 20px;
-	background-color: rgba( 87, 96, 111, .5 );
+	background-color: rgb( 69, 75, 88 );
+	border: 2px solid rgb( 47, 53, 66 );
 	border-radius: 4px 0px 2px 5px / 2px 22px 2px 25px;
 	transform: rotate( 90deg );
 	transition: right 500ms;
@@ -556,10 +592,6 @@ img.navbar-brand {
 	display: none;
 	border-radius: 3px;
 }
-#chat > ul.logos > li .logo,
-#chat > ul.timestamp > li .time {
-	display: initial;
-}
 #chat > ul > li .flag {
 	margin-right: 3px;
 	height: 18px;
@@ -591,7 +623,20 @@ img.navbar-brand {
 	text-decoration: none;
 }
 
-#settings {
+#chat.ontop > .lateral {
+	top: 230px;
+}
+#chat.ontop > ul > .infos {
+	top: 60px;
+	bottom: initial;
+}
+#chat.logos > ul > li .logo,
+#chat.timestamp > ul > li .time {
+	display: initial;
+}
+
+#panel {
+	overflow: hidden;
 	right: -324px;
 	width: 320px;
 	background-color: rgb( 69, 75, 88 );
@@ -599,67 +644,67 @@ img.navbar-brand {
 	border-radius: 4px 0px 2px 5px / 2px 22px 2px 25px;
 	box-shadow: -3px 0px 4px rgba( 255, 255, 255, .1 );
 }
-#settings > ul.menu {
+#panel ul.menu {
 	cursor: default;
 }
-#settings > ul.menu > li {
+#panel ul.menu > li {
 	display: inline-block;
 	color: #888;
 	cursor: pointer;
 }
-#settings > ul.menu > li.active {
+#panel ul.menu > li.active {
 	color: inherit;
 	text-shadow: 0px 0px 3px #000;
 	cursor: default;
 }
-#settings > .menu > li > i {
+#panel ul.menu > li > i {
 	margin: 0px 4px;
 	font-size: 32px;
 }
-#settings > ul:not(.menu) {
+#panel #settings ul.twocol:not(.menu) {
 	display: none;
 }
-#settings .custom-toggle {
+#panel .custom-toggle {
 	position: absolute;
 	right: 20px;
 }
 .modal-body > ul > li .fas,
-#settings .fas {
+#panel .fas {
 	font-size: 24px;
 }
 .modal-body hr,
-#settings hr {
+#panel hr {
 	margin-top: 45px;
 	margin-bottom: 12px;
 	width: 70%;
 }
 .modal-body hr.first,
-#settings hr.first {
+#panel hr.first {
 	margin-top: 12px;
 }
 .modal-body > h3,
-#settings > h3 {
+#panel > div > h3 {
 	cursor: default;
 }
 .modal-body > ul > li,
-#settings > ul > li {
+#panel ul.twocol > li {
 	line-height: 33px;
 }
 .modal-body > ul > li > .title,
-#settings > ul > li > .title {
+#panel ul.twocol > li > .title {
 	float: left;
 	cursor: default;
 }
 .modal-body > ul > li > .title > input,
-#settings > ul > li > .title > input {
+#panel ul.twocol > li > .title > input {
 	width: 245px;
 	cursor: text;
 }
 .modal-body > ul > li > .title input[type=checkbox],
-#settings > ul > li > .title input[type=checkbox] {
+#panel ul.twocol > li > .title input[type=checkbox] {
 	margin-bottom: 0px !important;
 }
-#settings > ul.users > li[data-user] > .title {
+#panel ul.twocol.users > li[data-user] > .title {
 	overflow: hidden;
 	width: calc( 100% - 50px );
 	text-align: left;
@@ -668,16 +713,16 @@ img.navbar-brand {
 	user-select: none;
 }
 .modal-body > ul > li > .value,
-#settings > ul > li > .value {
+#panel ul.twocol > li > .value {
 	float: right;
 	position: relative;
 }
 .modal-body > ul > li > .value > input,
 .modal-body > ul > li > .value > button,
 .modal-body > ul > li > .value > .btn-group,
-#settings > ul > li > .value > input,
-#settings > ul > li > .value > button,
-#settings > ul > li > .value > .btn-group {
+#panel ul.twocol > li > .value > input,
+#panel ul.twocol > li > .value > button,
+#panel ul.twocol > li > .value > .btn-group {
 	margin: 2px 0px;
 	padding: 2px 5px 0px;
 	min-width: 150px;
@@ -685,17 +730,17 @@ img.navbar-brand {
 	text-align: right !important;
 }
 .modal-body > ul > li > .value > input,
-#settings > ul > li > .value > input {
+#panel ul.twocol > li > .value > input {
 	direction: rtl;
 }
 .modal-body > ul > li > .value > input[type=text],
 .modal-body > ul > li > .value > input[type=range],
-#settings > ul > li > .value > input[type=text],
-#settings > ul > li > .value > input[type=range] {
+#panel ul.twocol > li > .value > input[type=text],
+#panel ul.twocol > li > .value > input[type=range] {
 	direction: initial;
 }
 .modal-body > ul > li > .value button,
-#settings > ul > li > .value button {
+#panel ul.twocol > li > .value button {
 	overflow: hidden;
 	min-width: initial;
 	max-width: 150px;
@@ -703,36 +748,140 @@ img.navbar-brand {
 	white-space: nowrap;
 }
 .modal-body > ul > li > .value > .fas,
-#settings > ul:not(.users) > li > .value > .fas {
+#panel ul.twocol:not(.users) > li > .value > .fas {
 	position: absolute;
 	top: 5px;
 	left: -30px;
 	cursor: pointer;
 }
-#settings > ul > li.channel > .value > .fas {
+#panel ul.twocol > li.channel > .value > .fas {
 	top: 8px;
 	left: -28px;
 	font-size: 21px;
 }
-#settings > ul.users > li > .value > .fas {
+#panel ul.twocol.users > li > .value > .fas {
 	font-size: 22px;
 	vertical-align: -4px;
 	cursor: pointer;
 }
 .modal-body > ul > li > .value > .btn-group,
-#settings > ul > li > .value > .btn-group {
+#panel ul.twocol > li > .value > .btn-group {
 	padding-right: 0px;
 	min-width: 155px;
 }
 .modal-body > ul > li > .value > .btn-group > button,
-#settings > ul > li > .value > .btn-group > button {
+#panel ul.twocol > li > .value > .btn-group > button {
 	max-width: 125px;
 }
 .modal-body > ul > li > .btn-group > .form-check,
-#settings > ul > li > .btn-group > .form-check {
+#panel ul.twocol > li > .btn-group > .form-check {
 	padding-left: .75rem;
 }
 .modal-body > ul > li > .btn-group > .form-check:first-child,
-#settings > ul > li > .btn-group > .form-check:first-child {
+#panel ul.twocol > li > .btn-group > .form-check:first-child {
 	padding-left: initial;
+}
+
+#viewers,
+#followers {
+	padding-bottom: 0px;
+	height: 100%;
+}
+#viewers .viewers-title,
+#followers .followers-title {
+	position: absolute;
+	top: 0px;
+	left: 0px;
+	right: 0px;
+	padding: 15px;
+	padding-bottom: 0px;
+	background-color: rgb( 69, 75, 88 );
+	z-index: 1;
+}
+#viewers .viewers-title input:last-of-type,
+#followers .followers-title input:last-of-type {
+	margin-bottom: 5px;
+}
+#viewers input[name=filter],
+#followers input[name=filter] {
+	margin-bottom: 20px;
+	width: 100%;
+}
+#viewers .gradient,
+#followers .gradient {
+	position: absolute;
+	bottom: -5px;
+	width: 100%;
+	height: 5px;
+	background: linear-gradient( 180deg, rgba( 69, 75, 88, 1 ) 21%, rgba( 69, 75, 88, 0 ) 100% );
+}
+#viewers a,
+#followers a {
+	text-decoration: none;
+}
+#viewers hr,
+#followers hr {
+	margin-top: 15px;
+	margin-bottom: 5px;
+}
+#viewers ul,
+#followers ul {
+	margin-bottom: 0px;
+}
+
+#viewers {
+	padding-top: 110px;
+}
+#viewers .category {
+	position: relative;
+	width: 100%;
+	text-align: left;
+}
+#viewers .category > div {
+	position: absolute;
+	top: 3px;
+	right: 10px;
+	font-size: 12px;
+	font-style: italic;
+}
+#viewers ul {
+	text-align: left;
+	padding-bottom: 5px;
+}
+#viewers ul > li {
+	overflow: hidden;
+	width: calc( 100% - 4px );
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+#followers {
+	padding-top: 180px;
+}
+#followers hr {
+	margin-top: 30px;
+}
+#followers ul {
+	padding-left: 0px;
+	padding-bottom: 10px;
+	text-align: right;
+}
+#followers ul > li {
+	position: relative;
+	width: 100%;
+	padding-bottom: 5px;
+}
+#followers ul > li > div.left {
+	overflow: hidden;
+	position: absolute;
+	left: 0px;
+	width: calc( 100% - 145px );
+	text-align: left;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+#followers ul > li > div.right {
+	padding-top: 2px;
+	font-family: courier;
+	font-size: 12px;
 }

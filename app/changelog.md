@@ -53,3 +53,12 @@ v0.0.56:
 v0.0.57:
  - Add acknowledgments for Streamers who helped debug
  - Fix the volume problem that cuts everything when you set a volume to 0
+
+v0.0.58:
+ - Sorts users when adding
+ - Adds 'Infos on top' functionality
+ - New side panels for visitors and followers
+ - Fix the logo change when it is already stored
+ - Changed word replacement to avoid changes inside words
+ - Reduces minimum application size (app)
+ - Allows disabling hardware acceleration (app)

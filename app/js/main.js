@@ -2,6 +2,9 @@ window.addEventListener( 'load', () => {
 	var html_change = document.createEvent( 'HTMLEvents' );
 	html_change.initEvent( 'change', true, false );
 
+	var html_input = document.createEvent( 'HTMLEvents' );
+	html_input.initEvent( 'input', true, false );
+
 	var mouse_click = document.createEvent( 'MouseEvents' );
 	mouse_click.initEvent( 'click', true, false );
 
@@ -22,6 +25,7 @@ window.addEventListener( 'load', () => {
 		voices		= [],
 		channel		= [ '', '' ],
 		nosleep		= null,
+		viewers		= [ null, null ],
 		channels	= [],
 		language	= null,
 		onscroll	= [ false, true ],
@@ -70,6 +74,7 @@ window.addEventListener( 'load', () => {
 		iaudio = null,
 		ilinks = null,
 		ilogos = null,
+		iontop = null,
 		ipitch = null,
 		iemotes = null,
 		irepeat = null,
@@ -93,6 +98,7 @@ window.addEventListener( 'load', () => {
 		ichannel.value = ( localStorage.getItem( 'channel' ) || '' );
 		token = ( localStorage.getItem( 'token' ) || '' );
 		iaudio.checked = ( ( localStorage.getItem( 'audio' ) || 'true' ) == 'true' );
+		iontop.checked = ( ( localStorage.getItem( 'ontop' ) || 'false' ) == 'true' );
 
 		irate.value = parseFloat( localStorage.getItem( 'rate' ) || 1 );
 		ipitch.value = parseFloat( localStorage.getItem( 'pitch' ) || .8 );
@@ -172,6 +178,7 @@ window.addEventListener( 'load', () => {
 
 		toggle( 'timestamp' );
 		toggle( 'logos' );
+		toggle( 'ontop' );
 	}
 
 	/**
@@ -185,6 +192,7 @@ window.addEventListener( 'load', () => {
 			localStorage.setItem( 'channel', ( data ? data.channel : channel[ 0 ] ) );
 			localStorage.setItem( 'token', ( data ? data.token : token ) );
 			localStorage.setItem( 'audio', ( data ? data.audio : iaudio.checked.toString() ) );
+			localStorage.setItem( 'ontop', ( data ? data.ontop : iontop.checked.toString() ) );
 
 			localStorage.setItem( 'voice', ( data ? data.voice : ( voice[ 1 ] ? ( voice[ 1 ].lang + '|' + voice[ 1 ].name ) : '' ) ) );
 			localStorage.setItem( 'rate', ( data ? data.rate : irate.value ) );
@@ -313,61 +321,21 @@ window.addEventListener( 'load', () => {
 		} );
 	}
 
-	/**
-	 * @desc Get information about the Twitch channel
-	 * @param	{string}			channel_id			Twitch Channel ID
-	 * @param	{function}			callback			Returns the object resulting from the request
-	 */
-	function channel_infos( channel_id, callback )
+	function jrequest( url, force_return )
 	{
-		if ( !channel_id )
-			return ;
+		return new Promise( function( resolve, reject ) {
+			var script = document.createElement( 'script' );
 
-		request( `https://api.twitch.tv/kraken/channels/${channel_id}` )
-			.then( ( data ) => { callback( data ); } )
-			.catch( ( error ) => {
-				console.error( 'infos:', error );
-				disconnect();
-			} );
-	}
+			const name = ( '_jsonp_' + Math.round( 100000 * Math.random() ) );
+			window[ name ] = function( data ) {
+				resolve( data );
+				document.body.removeChild( script );
+				delete window[ name ];
+			};
 
-	/**
-	 * @desc Get information related to the current Stream
-	 * @param	{string}			channel_id			Twitch Channel ID
-	 * @param	{function}			callback			Returns the object resulting from the request
-	 */
-	function channel_stream( channel_id, callback )
-	{
-		if ( !channel_id )
-			return ;
-
-		request( `https://api.twitch.tv/kraken/streams?channel=${channel_id}` )
-			.then( ( data ) => {
-				try
-				{
-					callback( data.streams[ 0 ] );
-				} catch ( e ) {}
-			} )
-			.catch( ( error ) => {
-				console.error( 'stream:', error );
-				stream = null;
-				update();
-			} );
-	}
-
-	/**
-	 * @desc Get the last followers of the Twitch channel
-	 * @param	{string}			channel_id			Twitch Channel ID
-	 * @param	{function}			callback			Returns the object resulting from the request
-	 */
-	function channel_followers( channel_id, callback )
-	{
-		if ( !channel_id )
-			return ;
-
-		request( `https://api.twitch.tv/kraken/channels/${channel_id}/follows?limit=100` )
-			.then( ( data ) => { callback( data ); } )
-			.catch( ( error ) => { console.error( 'followers:', error ); } );
+			script.src = url + ( ( url.indexOf( '?' ) >= 0 ) ? '&' : '?' ) + 'callback=' + name;
+			document.body.appendChild( script );
+		} );
 	}
 
 	/**
@@ -617,6 +585,49 @@ window.addEventListener( 'load', () => {
 		return ( dropdown );
 	}
 
+	var load_progress = false;
+	/**
+	 * @desc Refreshed the list of followers
+	 */
+	function load_followers( force )
+	{
+		var tchannel = [ channel[ 0 ], channel[ 1 ] ];
+		var list = dfollowers.querySelector( '.followers-list' );
+		if ( !tchannel[ 0 ] || !tchannel[ 1 ] )
+		{
+			list.setAttribute( 'data-channel', '' );
+			list.innerText = language[ 2 ][ tchannel[ 0 ] ? 'wait' : 'login' ];
+
+			if ( tchannel[ 0 ] )
+				setTimeout( load_followers, 500 );
+
+			return ;
+		}
+
+		if ( load_progress || ( !force && list.getAttribute( 'data-channel' ) == tchannel[ 0 ] ) )
+			return ;
+
+		load_progress = true;
+		list.setAttribute( 'data-channel', tchannel[ 0 ] );
+		list.innerHTML = `${language[ 2 ].wait}<br />0 / ${tfollowers.innerText}`;
+		channel_all_followers( tchannel[ 1 ], ( data, end ) => {
+			list.innerHTML = `${language[ 2 ].wait}<br />${data.follows.length} / ${data._total}`;
+			if ( !end )
+				return ;
+
+			setTimeout( () => {
+				data.filter = dfollowers.querySelector( 'input[name=filter]' ).value.trim().toLowerCase();
+				data.date_in = dfollowers.querySelector( 'input[name=date-out]' ).getAttribute( 'min' );
+				data.date_out = dfollowers.querySelector( 'input[name=date-in]' ).getAttribute( 'max' );
+				list.innerHTML = templates.followers( Object.assign( { data: data }, language[ 2 ] ) );
+
+				title_set( list );
+				dfollowers.querySelector( 'input[name=filter]' ).dispatchEvent( html_input );
+				load_progress = false;
+			}, 500 );
+		} );
+	}
+
 	/**
 	 * @desc Initializes the voice and the entire interface
 	 * @param	{number}			[passe]				Step of the initialization process
@@ -663,10 +674,12 @@ window.addEventListener( 'load', () => {
 
 							document.body.appendChild( html( templates.navbar( language[ 2 ] ), true ) );
 							document.body.appendChild( html( templates.chat( language[ 2 ] ), true ) );
-							document.body.appendChild( html( templates.settings( language[ 2 ] ), true ) );
+							document.body.appendChild( html( templates.panel( language[ 2 ] ), true ) );
 
 							dchat = dbase.querySelector( '#chat > ul' );
+							dviewers = dbase.querySelector( '#viewers' );
 							dsettings = dbase.querySelector( '#settings' );
+							dfollowers = dbase.querySelector( '#followers' );
 							badd = dsettings.querySelector( 'button[name=add]' );
 							btest = dsettings.querySelector( 'button[name=test]' );
 							breset = dsettings.querySelector( 'button[name=reset]' );
@@ -688,6 +701,7 @@ window.addEventListener( 'load', () => {
 							iaudio = dsettings.querySelector( 'input[name=audio]' );
 							ilinks = dsettings.querySelector( 'input[name=links]' );
 							ilogos = dsettings.querySelector( 'input[name=logos]' );
+							iontop = dsettings.querySelector( 'input[name=ontop]' );
 							ipitch = dsettings.querySelector( 'input[name=pitch]' );
 							iemotes = dsettings.querySelector( 'input[name=emotes]' );
 							irepeat = dsettings.querySelector( 'input[name=repeat]' );
@@ -774,6 +788,59 @@ window.addEventListener( 'load', () => {
 							zstatus = zbase.querySelector( '.infos-status' );
 							zgame = zbase.querySelector( '.infos-game' );
 
+							dviewers.querySelector( 'input[name=filter]' ).addEventListener( 'input', function() {
+								var categories = {};
+								var filter = this.value.trim().toLowerCase();
+
+								dviewers.querySelectorAll( '[data-username]' ).forEach( ( elem ) => {
+									var show = ( !filter || elem.getAttribute( 'data-username' ).indexOf( filter ) >= 0 );
+									elem.parentNode.style.display = ( show ? 'inline-block' : 'none' );
+
+									var category = elem.parentNode.parentNode.getAttribute( 'data-viewers' );
+									if ( typeof( categories[ category ] ) === 'undefined' )
+										categories[ category ] = 0;
+									categories[ category ] += ( show ? 1 : 0 );
+								} );
+
+								Object.keys( categories ).forEach( ( category ) => {
+									var elem = dviewers.querySelector( `span[data-viewers=${category}]` );
+									if ( elem )
+										elem.innerText = categories[ category ].toString();
+								} );
+							} );
+
+							dfollowers.querySelector( '.fa-sync-alt' ).addEventListener( 'click', load_followers );
+							dfollowers.querySelector( 'input[name=filter]' ).addEventListener( 'input', function() {
+								var filter = this.value.trim().toLowerCase();
+								var date_in = dfollowers.querySelector( 'input[name=date-out]' ).getAttribute( 'min' );
+								var date_out = dfollowers.querySelector( 'input[name=date-in]' ).getAttribute( 'max' );
+
+								dfollowers.querySelectorAll( '[data-username]' ).forEach( ( elem ) => {
+									var date = elem.getAttribute( 'data-date' );
+									var show = ( !filter || elem.getAttribute( 'data-username' ).indexOf( filter ) >= 0 );
+									show = ( show && ( date >= date_in && date <= date_out ) );
+									elem.style.display = ( show ? 'inline-block' : 'none' );
+								} );
+							} );
+
+							var date_in = dfollowers.querySelector( 'input[name=date-in]' );
+							var date_out = dfollowers.querySelector( 'input[name=date-out]' );
+							date_in.addEventListener( 'change', () => {
+								var date = date_in.value;
+								date_out.setAttribute( 'min', ( date.match( /^\d{4}-\d{2}-\d{2}$/ ) ? date : '2011-01-01' ) );
+								dfollowers.querySelector( 'input[name=filter]' ).dispatchEvent( html_input );
+							} );
+							date_out.addEventListener( 'change', () => {
+								var date = date_out.value;
+								date_in.setAttribute( 'max', ( date.match( /^\d{4}-\d{2}-\d{2}$/ ) ? date : ( new Date() ).toISOString().substr( 0, 10 ) ) );
+								dfollowers.querySelector( 'input[name=filter]' ).dispatchEvent( html_input );
+							} );
+
+							date_in.setAttribute( 'min', '2011-01-01' );
+							date_out.setAttribute( 'max', ( new Date() ).toISOString().substr( 0, 10 ) );
+							date_in.dispatchEvent( html_change );
+							date_out.dispatchEvent( html_change );
+
 							loading.querySelector( '.fas' ).className = 'fas fa-mouse';
 							loading.querySelector( 'span' ).innerText = language[ 2 ].loading;
 							loading.addEventListener( 'click', () => {
@@ -840,9 +907,25 @@ window.addEventListener( 'load', () => {
 				dchat.parentNode.scrollTo( { top: ( dchat.parentNode.scrollHeight + 100 ), behavior: 'smooth' } );
 			} );
 			lateral[ 4 ].addEventListener( 'click', () => {
-				dbase.classList.toggle( 'show-settings' );
+				dbase.classList.toggle( 'show-followers', false );
+				dbase.classList.toggle( 'show-settings', false );
+				dbase.classList.toggle( 'show-viewers' );
+
+				if ( !channel[ 0 ] )
+					return ( dviewers.querySelector( '.viewers-list' ).innerText = language[ 2 ].login );
 			} );
 			lateral[ 5 ].addEventListener( 'click', () => {
+				dbase.classList.toggle( 'show-viewers', false );
+				dbase.classList.toggle( 'show-settings', false );
+				dbase.classList.toggle( 'show-followers' );
+				load_followers();
+			} );
+			lateral[ 6 ].addEventListener( 'click', () => {
+				dbase.classList.toggle( 'show-viewers', false );
+				dbase.classList.toggle( 'show-followers', false );
+				dbase.classList.toggle( 'show-settings' );
+			} );
+			lateral[ 7 ].addEventListener( 'click', () => {
 				dchat.innerText = '';
 				onscroll[ 1 ] = true;
 			} );
@@ -952,6 +1035,7 @@ window.addEventListener( 'load', () => {
 			iflooding.addEventListener( 'change', function() { title_update( this, language[ 2 ].voice.flooding.change.replace( '%d', parseInt( this.value ) ) ); } );
 			itimestamp.addEventListener( 'click', function() { toggle( 'timestamp' ); } );
 			ilogos.addEventListener( 'click', function() { toggle( 'logos' ); } );
+			iontop.addEventListener( 'click', function() { toggle( 'ontop' ); } );
 
 			var more = ichannel.parentNode.querySelector( ':scope > .fas' );
 			more.addEventListener( 'click', function() {
@@ -1187,6 +1271,7 @@ window.addEventListener( 'load', () => {
 		infos = null;
 		stream = null;
 		channel = [ '', '' ];
+		viewers = [ null, null ];
 		followers = [ 0, null ];
 
 		update();
@@ -1232,7 +1317,7 @@ window.addEventListener( 'load', () => {
 			} );
 		}
 
-		tviewers.innerText = ( cstream ? stream.viewers.toString().replace( /\B(?=(\d{3})+(?!\d))/g, ' ' ) : '-' );
+		tviewers.innerText = ( cstream ? stream.viewers.toString().replace( /\B(?=(\d{3})+(?!\d))/g, ' ' ) : ( ( viewers[ 0 ] && typeof( viewers[ 0 ].chatter_count ) === 'number' ) ? viewers[ 0 ].chatter_count.toString().replace( /\B(?=(\d{3})+(?!\d))/g, ' ' ) : '-' ) );
 		tfollowers.innerText = ( ( typeof( followers[ 1 ] ) === 'object' && followers[ 1 ] !== null ) ? followers[ 0 ].toString().replace( /\B(?=(\d{3})+(?!\d))/g, ' ' ) : '-' );
 	}
 
@@ -1262,11 +1347,12 @@ window.addEventListener( 'load', () => {
 	function channel_logo( channel_id, data, callback )
 	{
 		var exist = false;
-		if ( !channel_id || ( ( exist = ( typeof( logos[ channel_id ] ) !== 'undefined' ) ) && logos[ channel_id ][ 1 ] ) )
+		if ( !channel_id )
 			return ;
 
 		var dlogo = 'images/default.png';
 		var tlogo = ( data && data.logo );
+		var exist = ( typeof( logos[ channel_id ] ) !== 'undefined' );
 		if ( tlogo )
 		{
 			if ( !exist || tlogo != logos[ channel_id ][ 0 ] || !logos[ channel_id ][ 1 ] )
@@ -1303,7 +1389,7 @@ window.addEventListener( 'load', () => {
 		if ( channel_count > 0 )
 			return ;
 
-		channel_count = 2;
+		channel_count = 3;
 		setTimeout( channel_update, 5000 );
 	}
 
@@ -1312,8 +1398,8 @@ window.addEventListener( 'load', () => {
 	 */
 	function channel_update()
 	{
-		var tchannel = channel[ 1 ];
-		if ( !tchannel )
+		var tchannel = [ channel[ 0 ], channel[ 1 ] ];
+		if ( !tchannel[ 1 ] )
 			return ( setTimeout( channel_update, 500 ) );
 
 		dsettings.querySelectorAll( '[data-user]' ).forEach( ( elem ) => {
@@ -1325,14 +1411,34 @@ window.addEventListener( 'load', () => {
 			elem.remove();
 		} );
 
-		channel_stream( tchannel, ( data ) => {
+		channel_stream( tchannel[ 1 ], ( data ) => {
 			stream = data;
 			update();
 			channel_next();
 		} );
 
-		channel_followers( tchannel, ( data ) => {
-			if ( channel[ 1 ] != tchannel )
+		channel_viewers( channel[ 0 ], ( data ) => {
+			if ( typeof( data ) === 'object' && typeof( data.data ) === 'object' )
+				viewers[ 0 ] = data.data;
+
+			data = viewers[ 0 ];
+			var stringify = JSON.stringify( data );
+			if ( stringify != viewers[ 1 ] )
+			{
+				viewers[ 1 ] = stringify;
+				data.filter = dviewers.querySelector( 'input[name=filter]' ).value.trim().toLowerCase();
+				data.keys = [ 'broadcaster', 'admins', 'global_mods', 'moderators', 'vips', 'staff', 'viewers' ];
+				dviewers.querySelector( '.viewers-list' ).innerHTML = templates.viewers( Object.assign( { data: data }, language[ 2 ] ) );
+			}
+			title_set( dviewers.querySelector( '.viewers-list' ) );
+			dviewers.querySelector( 'input[name=filter]' ).dispatchEvent( html_input );
+
+			update();
+			channel_next();
+		} );
+
+		channel_followers( tchannel[ 1 ], ( data ) => {
+			if ( channel[ 1 ] != tchannel[ 1 ] )
 				return ( channel_next() );
 
 			var current = {};
@@ -1370,6 +1476,121 @@ window.addEventListener( 'load', () => {
 			update();
 			channel_next();
 		} );
+	}
+
+	/**
+	 * @desc Get information about the Twitch channel
+	 * @param	{string}			channel_id			Twitch Channel ID
+	 * @param	{function}			callback			Returns the object resulting from the request
+	 */
+	function channel_infos( channel_id, callback )
+	{
+		if ( !channel_id )
+			return ;
+
+		request( `https://api.twitch.tv/kraken/channels/${channel_id}` )
+			.then( ( data ) => { callback( data ); } )
+			.catch( ( error ) => {
+				console.error( 'infos:', error );
+				disconnect();
+			} );
+	}
+
+	/**
+	 * @desc Get information related to the current Stream
+	 * @param	{string}			channel_id			Twitch Channel ID
+	 * @param	{function}			callback			Returns the object resulting from the request
+	 */
+	function channel_stream( channel_id, callback )
+	{
+		if ( !channel_id )
+			return ;
+
+		request( `https://api.twitch.tv/kraken/streams?channel=${channel_id}` )
+			.then( ( data ) => {
+				try
+				{
+					callback( data.streams[ 0 ] );
+				} catch ( e ) {}
+			} )
+			.catch( ( error ) => {
+				console.error( 'stream:', error );
+				stream = null;
+				update();
+			} );
+	}
+
+	/**
+	 * @desc Get the latest Twitch channel viewers
+	 * @param	{string}			channel_name		Twitch Channel name
+	 * @param	{function}			callback			Returns the object resulting from the request
+	 */
+	function channel_viewers( channel_name, callback )
+	{
+		if ( !channel_name )
+			return ;
+
+		channel_name = channel_name.toLowerCase();
+		jrequest( `https://tmi.twitch.tv/group/user/${channel_name}/chatters` )
+			.then( ( data ) => { callback( data ); } )
+			.catch( ( error ) => { console.error( 'viewers:', error ); } );
+	}
+
+	/**
+	 * @desc Get the last followers of the Twitch channel
+	 * @param	{string}			channel_id			Twitch Channel ID
+	 * @param	{function}			callback			Returns the object resulting from the request
+	 */
+	function channel_followers( channel_id, callback, cursor )
+	{
+		if ( !channel_id )
+			return ;
+
+		cursor = ( cursor ? `&cursor=${cursor}` : '' );
+		request( `https://api.twitch.tv/kraken/channels/${channel_id}/follows?limit=100&direction=desc${cursor}` )
+			.then( ( data ) => { callback( data ); } )
+			.catch( ( error ) => { console.error( 'followers:', error ); } );
+	}
+
+	/**
+	 * @desc Get the last followers of the Twitch channel
+	 * @param	{string}			channel_id			Twitch Channel ID
+	 * @param	{function}			callback			Returns the object resulting from the request
+	 * @param	{object}			[data]				Data of last request
+	 */
+	function channel_all_followers( channel_id, callback, data )
+	{
+		if ( !channel_id )
+			return ;
+
+		var cursor = false;
+		if ( data )
+		{
+			cursor = data._cursor;
+			data._cursor = false;
+		}
+
+		channel_followers( channel[ 1 ], ( tdata ) => {
+			if ( tdata )
+			{
+				if ( data )
+				{
+					data._cursor = tdata._cursor;
+					for ( var i = 0; i < tdata.follows.length; ++i )
+						data.follows.unshift( tdata.follows[ i ] );
+				}
+				else
+					data = tdata;
+			}
+
+			var end = ( !data || !tdata || typeof( data._cursor ) !== 'string' || tdata.follows.length < 100 );
+			if ( data && end )
+				delete data._cursor;
+
+			callback( data, end );
+			if ( !end )
+				setTimeout( () => { channel_all_followers( channel_id, callback, data ); }, 250 );
+		}, cursor );
 	}
 
 	/**
@@ -1414,8 +1635,18 @@ window.addEventListener( 'load', () => {
 				users[ user_name ][ key ] = undefined;
 		} );
 
+		var dest = null;
+		var dusers = dsettings.querySelector( '.users' );
+		dusers.querySelectorAll( '[data-user]' ).forEach( ( elem ) => {
+			if ( !dest && elem.getAttribute( 'data-user' ) > user_name )
+				dest = elem;
+		} );
+
 		var li = html( templates.user( Object.assign( { data: users[ user_name ] }, language[ 2 ] ) ), true );
-		dsettings.querySelector( '.users' ).appendChild( li );
+		if ( dest )
+			dest.parentNode.insertBefore( li, dest );
+		else
+			dusers.appendChild( li );
 
 		var manage = function( data ) {
 			if ( !data || data instanceof Event )
@@ -1799,7 +2030,7 @@ window.addEventListener( 'load', () => {
 			var data = { data: [] };
 			Object.keys( obj ).forEach( ( word ) => {
 				var value = obj[ word ];
-				data.data.push( { error: false, word: word, replace: value[ 1 ], mode: value[ 0 ] } );
+				data.data.push( { error: false, word: word, replacement: value[ 1 ], mode: value[ 0 ] } );
 			} );
 
 			return ( Object.assign( data, language[ 2 ] ) );
@@ -2108,7 +2339,7 @@ window.addEventListener( 'load', () => {
 	function toggle( name )
 	{
 		var elem = dsettings.querySelector( `[name=${name}]` );
-		dchat.classList.toggle( name, elem.checked );
+		dchat.parentNode.classList.toggle( name, elem.checked );
 	}
 
 	/**
@@ -2142,6 +2373,38 @@ window.addEventListener( 'load', () => {
 	}
 
 	/**
+	 * @desc Finds the position of one text in another
+	 * @param	{string}			text				Text in which to search
+	 * @param	{string}			search				Search text
+	 * @param	{bool}				[all]				Forward all positions
+	 * @param	{bool}				[sensitive]			Case sensitive
+	 * @return	{Array}									Start and end position of the text
+	 */
+	function position( text, search, all, sensitive )
+	{
+		if ( !sensitive )
+		{
+			text = text.toLowerCase();
+			search = search.toLowerCase();
+		}
+
+		var index = -1;
+		var indexes = [];
+		while ( true )
+		{
+			index = text.indexOf( search, ( ( index >= 0 ) ? ( index + search.length ) : false ) );
+			if ( index < 0 )
+				break ;
+
+			indexes.push( [ index, ( index + search.length ) ] );
+			if ( !all )
+				return ( indexes.pop() );
+		}
+
+		return ( all ? indexes : [ -1, -1 ] )
+	}
+
+	/**
 	 * @desc Replace words according to settings
 	 * @param	{string}			[user]				Twitch username
 	 * @param	{string}			[message]			Message
@@ -2161,9 +2424,25 @@ window.addEventListener( 'load', () => {
 		Object.keys( twords ).forEach( ( word ) => {
 			var [ mode, replacement ] = twords[ word ];
 			if ( ( mode == 1 || mode == 3 ) && uuser )
-				user = user.split( word.toLowerCase() ).join( replacement.toLowerCase() );
+			{
+				position( user, word, true ).forEach( ( index ) => {
+					var before = ( [ '@', '#' ].indexOf( user[ index[ 0 ] - 1 ] ) >= 0 );
+					var start = ( !index[ 0 ] || user[ index[ 0 ] - 1 ] == ' ' || ( index[ 0 ] == 1 && before ) || ( index[ 0 ] >= 2 && before && user[ index[ 0 ] - 2 ] == ' ' ) );
+					var end = ( index[ 1 ] == user.length || user[ index[ 1 ] ] == ' ' );
+					if ( start && end )
+						user = ( user.substr( 0, index[ 0 ] ) + replacement + user.substr( index[ 1 ] ) );
+				} );
+			}
 			if ( ( mode == 2 || mode == 3 ) && umessage )
-				message = message.split( word.toLowerCase() ).join( replacement.toLowerCase() );
+			{
+				position( message, word, true ).forEach( ( index ) => {
+					var before = ( [ '@', '#' ].indexOf( message[ index[ 0 ] - 1 ] ) >= 0 );
+					var start = ( !index[ 0 ] || message[ index[ 0 ] - 1 ] == ' ' || ( index[ 0 ] == 1 && before ) || ( index[ 0 ] >= 2 && before && message[ index[ 0 ] - 2 ] == ' ' ) );
+					var end = ( index[ 1 ] == message.length || message[ index[ 1 ] ] == ' ' );
+					if ( start && end )
+						message = ( message.substr( 0, index[ 0 ] ) + replacement + message.substr( index[ 1 ] ) );
+				} );
+			}
 		} );
 
 		return ( ( uuser && umessage ) ? [ user, message ] : ( umessage ? message : user ) );
@@ -2568,21 +2847,21 @@ window.addEventListener( 'load', () => {
 		chat( language[ 2 ].chat.connected.replace( /\$channel_name\$/g, channel_all ), undefined, { connected: true } );
 		update();
 
-		var tchannel = channel[ 0 ];
-		if ( tchannel )
+		var tchannel = [ channel[ 0 ], channel[ 1 ] ];
+		if ( tchannel[ 0 ] )
 		{
-			if ( !channel[ 1 ] )
+			var channel_name = encodeURIComponent( tchannel[ 0 ] );
+			if ( !tchannel[ 1 ] )
 			{
-				var channel_name = encodeURIComponent( tchannel );
 				request( `https://api.twitch.tv/kraken/users?login=${channel_name}` )
 					.then( ( data ) => {
 						try
 						{
-							if ( channel[ 0 ] && channel[ 0 ] == tchannel )
+							if ( channel[ 0 ] && channel[ 0 ] == tchannel[ 0 ] )
 							{
 								channel[ 1 ] = data.users[ 0 ]._id;
 								channel_infos( channel[ 1 ], ( data ) => {
-									if ( channel[ 0 ] && channel[ 0 ] == tchannel )
+									if ( channel[ 0 ] && channel[ 0 ] == tchannel[ 0 ] )
 									{
 										infos = data;
 										update();
@@ -2657,6 +2936,7 @@ window.addEventListener( 'load', () => {
 		[ 'upper',			function() { return ( arguments[ 0 ].toUpperCase() ); } ],
 		[ 'lower',			function() { return ( arguments[ 0 ].toLowerCase() ); } ],
 		[ 'capitalize',		function() { return ( arguments[ 0 ].slice( 0, 1 ).toUpperCase() + arguments[ 0 ].slice( 1 ) ); } ],
+		[ 'replace',		function() { return ( arguments[ 0 ].replace( arguments[ 1 ], arguments[ 2 ] ) ); } ],
 		[ 'eq',				function() { return ( arguments[ 0 ] === arguments[ 1 ] ); } ],
 		[ 'not-eq',			function() { return ( arguments[ 0 ] !== arguments[ 1 ] ); } ],
 		[ 'not',			function() { return ( !arguments[ 0 ] ); } ],
@@ -2667,7 +2947,7 @@ window.addEventListener( 'load', () => {
 		[ 'gte',			function() { return ( arguments[ 0 ] >= arguments[ 1 ] ); } ],
 		[ 'lt',				function() { return ( arguments[ 0 ] < arguments[ 1 ] ); } ],
 		[ 'lte',			function() { return ( arguments[ 0 ] <= arguments[ 1 ] ); } ],
-		[ 'in',				function() { return ( ( ( typeof( arguments[ 1 ] ) === 'string' ) ? JSON.parse( arguments[ 1 ] ) : arguments[ 1 ] ).indexOf( arguments[ 0 ] ) >= 0 ); } ],
+		[ 'in',				function() { return ( arguments[ 1 ].indexOf( arguments[ 0 ] ) >= 0 ); } ],
 		[ 'not-in',			function() { return ( arguments[ 1 ].indexOf( arguments[ 0 ] ) < 0 ); } ],
 		[ 'type',			function() { return ( typeof( arguments[ 0 ] ) ); } ],
 		[ 'count',			function() { return ( ( typeof( arguments[ 0 ] ) === 'object' ) ? ( Array.isArray( arguments[ 0 ] ) ? arguments[ 0 ].length : Object.keys( arguments[ 0 ] ).length ) : 0 ); } ],

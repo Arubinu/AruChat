@@ -5,6 +5,7 @@
 		"page_down":			"Page +",
 		"scroll_bottom":		"Bottom",
 		"lateral":				"Settings",
+		"clear_chat":			"Clear Chat",
 		"sentences": {
 			"variables":		"variables",
 			"chat":				[ "Chat",						"$username$ said: $message$" ],
@@ -22,6 +23,23 @@
 			"hosted":			[ "Host",						"$username$ host with $viewers$ viewers" ],
 			"raid":				[ "Raid",						"$username$ raid with $viewers$ viewers" ]
 		},
+		"viewers": {
+			"name":				"Viewers",
+			"title":			"Users in Chat",
+			"keys": {
+				"broadcaster":	"Broadcaster",
+				"admins":		"Administrators",
+				"global_mods":	"Global Moderators",
+				"moderators":	"Moderators",
+				"vips":			"VIPs",
+				"staff":		"Staff",
+				"viewers":		"Viewers"
+			}
+		},
+		"followers": {
+			"name":				"Followers",
+			"title":			"Followers"
+		},
 		"connection": {
 			"title":			"Connection",
 			"channel":			"Channel",
@@ -35,6 +53,10 @@
 			"audio": {
 				"title":		"Sounds",
 				"help":			"Warns of the start or end of a stream with a sound signal"
+			},
+			"ontop": {
+				"title":		"Infos on top",
+				"help":			"Moves channel information to the top of the page"
 			}
 		},
 		"users": {
@@ -219,9 +241,13 @@
 			"speech":			"Small test of Text To Speech :)"
 		},
 		"loading":				"Click to continue ...",
+		"login":				"Please login !",
+		"wait":					"Please wait ...",
 		"thanks":				"Thanks: %s",
-		"viewers":				"Viewers",
-		"followers":			"Followers",
+		"refresh":				"Refresh",
+		"filter":				"Filter",
+		"date-in":				"Between",
+		"date-out":				"And",
 		"languages": {
 			"title":			"Languages",
 			"list":				[]
@@ -237,6 +263,7 @@
 		"page_down":			"Page +",
 		"scroll_bottom":		"Bas",
 		"lateral":				"Réglages",
+		"clear_chat":			"Effacer le Chat",
 		"sentences": {
 			"variables":		"variables",
 			"chat":				[ "Tchat",						"$username$ dit: $message$" ],
@@ -254,6 +281,23 @@
 			"hosted":			[ "Hébergement",				"$username$ héberge la chaîne avec $viewers$ personnes" ],
 			"raid":				[ "Raid",						"$username$ raid la chaîne avec $viewers$ personnes" ]
 		},
+		"viewers": {
+			"name":				"Spectateurs",
+			"title":			"Utilisateurs du Tchat",
+			"keys": {
+				"broadcaster":	"Diffuseur",
+				"admins":		"Administrateurs",
+				"global_mods":	"Global Moderateurs",
+				"moderators":	"Moderateurs",
+				"vips":			"VIPs",
+				"staff":		"Staff",
+				"viewers":		"Spectateurs"
+			}
+		},
+		"followers": {
+			"name":				"Followers",
+			"title":			"Followers"
+		},
 		"connection": {
 			"title":			"Connexion",
 			"channel":			"Chaine",
@@ -267,6 +311,10 @@
 			"audio": {
 				"title":		"Sons",
 				"help":			"Prévient d'un début ou d'une fin de stream via un signal sonore"
+			},
+			"ontop": {
+				"title":		"Infos en haut",
+				"help":			"Déplace les informations de chaîne en haut de page"
 			}
 		},
 		"users": {
@@ -454,9 +502,13 @@
 			"speech":			"Petit teste de Text To Speech :)"
 		},
 		"loading":				"Cliquez pour continuer ...",
+		"login":				"Veuillez vous connecter !",
+		"wait":					"Veuillez patienter ...",
 		"thanks":				"Remerciements: %s",
-		"viewers":				"Spectateurs",
-		"followers":			"Followers",
+		"refresh":				"Rafraîchir",
+		"filter":				"Filtre",
+		"date-in":				"Entre",
+		"date-out":				"Et",
 		"languages": {
 			"title":			"Langues",
 			"list":				[]
