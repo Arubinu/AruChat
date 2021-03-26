@@ -48,7 +48,8 @@ window.addEventListener( 'load', () => {
 			gift_renew:	[ '',	'$gifter$, $recipient$',					'',	true, true ],
 			hosted:		[ '',	'$username$, $viewers$',					'',	true, true ],
 			raid:		[ '',	'$username$, $viewers$',					'',	true, true ],
-		};
+		},
+		rcallbacks	= {};
 
 	var	dbase = document.body,
 		dchat = null,
@@ -1583,7 +1584,7 @@ window.addEventListener( 'load', () => {
 					data = tdata;
 			}
 
-			var end = ( !data || !tdata || typeof( data._cursor ) !== 'string' || tdata.follows.length < 100 );
+			var end = ( !data || !tdata || typeof( data._cursor ) !== 'string' || !data._cursor );
 			if ( data && end )
 				delete data._cursor;
 
@@ -2137,13 +2138,16 @@ window.addEventListener( 'load', () => {
 	 * @param	{Object}			[flags]				User-related flags
 	 * @param	{Object}			[extra]				Other information about the user and the process
 	 * @param	{bool}				[special]			If the message is not from a user
+	 * @param	{string}			[repeat]			Store the phrase to repeat
 	 * @return	{HTMLElement}							Item to add to a list
 	 */
-	function chat( user, message, flags, extra, special )
+	function chat( user, message, flags, extra, special, repeat )
 	{
 		var dclass = [];
 		var timestamp = new Date( parseInt( extra ? extra.timestamp : Date.now() ) );
 
+		if ( flags && typeof( flags.notime ) === 'boolean' && flags.notime )
+			dclass.push( 'notime' );
 		if ( flags && typeof( flags.highlighted ) === 'boolean' && flags.highlighted )
 			dclass.push( 'highlighted' );
 		if ( flags && typeof( flags.connected ) === 'boolean' && flags.connected )
@@ -2165,9 +2169,9 @@ window.addEventListener( 'load', () => {
 		{
 			message.forEach( ( item ) => {
 				dmessage.appendChild( item );
-				if ( item instanceof HTMLLinkElement )
+				if ( item instanceof HTMLLinkElement && dclass.indexOf( 'links' ) < 0 )
 					dclass.push( 'links' );
-				if ( item instanceof HTMLImageElement )
+				if ( item instanceof HTMLImageElement && dclass.indexOf( 'emotes' ) < 0 )
 					dclass.push( 'emotes' );
 			} );
 		}
@@ -2180,13 +2184,14 @@ window.addEventListener( 'load', () => {
 				image:	( ( extra && typeof( extra.roomId ) === 'string' && typeof( logos[ extra.roomId ] ) !== 'undefined' && logos[ extra.roomId ][ 1 ] ) ? logos[ extra.roomId ][ 1 ] : './images/default.png' )
 			},
 			user:		user,
-			class:		dclass,
+			class:		dclass.join( ' ' ),
 			extra:		extra,
 			flags:		flags,
 			time:		( '0' + timestamp.getHours() ).slice( -2 ) + ':' + ( '0' + timestamp.getMinutes() ).slice( -2 ),
 			color:		( extra ? colors[ extra.userId ] : 'initial' ),
 			accept:		[ 'broadcaster', 'mod', 'founder', 'vip', 'subscriber', 'premium', 'partner' ],
 			message:	dmessage.innerHTML,
+			repeat:		btoa( repeat ),
 			special:	special,
 			timestamp:	timestamp.getTime()
 		};
@@ -2217,6 +2222,11 @@ window.addEventListener( 'load', () => {
 								return ( options.querySelector( '.fa-trash-alt' ) );
 							};
 
+							options.querySelector( '.fa-redo-alt' ).addEventListener( 'click', ( event ) => {
+								var text = elem.parentElement.getAttribute( 'repeat' );
+								text = ( text && atob( text ) );
+								speech( text, true );
+							} );
 							options.querySelector( '.fa-check' ).addEventListener( 'click', ( event ) => {
 								get_trash().style.display = 'initial';
 								var tuser = user_add( user_name );
@@ -2559,7 +2569,9 @@ window.addEventListener( 'load', () => {
 	// ComfyJS
 	ComfyJS.onCommand = ( user, command, message, flags, extra ) => { // Responds to "!" commands
 		var prefix = `!${command}`;
-		if ( !command )
+		if ( command.substr( 0, 13 ) == 'Sound Alert: ' )
+			return ;
+		else if ( !command )
 			return ( ComfyJS.onChat( user, `${prefix} ${message}`, flags, false, extra ) );
 
 		if ( extra.messageEmotes )
@@ -2592,21 +2604,58 @@ window.addEventListener( 'load', () => {
 		if ( localStorage.getItem( 'debug' ) )
 			console.log( 'onChat:', user, message, flags, extra );
 
-		var [ template, flags, chat_enabled, split_msg, speech_enabled, speech_msg ] = convert( 'chat', user, message, flags, extra );
+		var callback = ( user, message, flags, extra, reward, only_return, force_repeat ) => {
+			var [ template, flags, chat_enabled, split_msg, speech_enabled, speech_msg ] = convert( 'chat', user, message, flags, extra );
 
-		if ( chat_enabled )
-			chat( user, split_msg, flags, extra );
+			flags.notime = reward;
+			flags.highlighted = ( flags.highlighted || reward );
 
-		if ( speech_enabled && speech_msg )
+			var ret = '';
+			var repeat = '';
+			if ( speech_enabled && speech_msg )
+			{
+				var [ luser, lmessage ] = replace( user, speech_msg );
+				var tmessage = limit( 'message', lmessage, user );
+				var text = template
+					.replace( /\$username\$/g, limit( 'username', luser, user ) )
+					.replace( /\$message\$/g, tmessage );
+
+				if ( text && !reward && !only_return )
+					speech( text, false, user, flags, extra, tmessage );
+
+				ret = tmessage;
+				repeat = lmessage;
+			}
+
+			if ( chat_enabled && !only_return )
+				chat( user, split_msg, flags, extra, undefined, ( force_repeat || repeat ) );
+
+			return ( ret );
+		};
+
+		var args = [ user, message, flags, extra ];
+		if ( flags.customReward && extra.customRewardId )
 		{
-			var [ luser, lmessage ] = replace( user, speech_msg );
-			var text = template
-				.replace( /\$username\$/g, limit( 'username', luser, user ) )
-				.replace( /\$message\$/g, limit( 'message', lmessage, user ) );
+			var timeout = 0;
+			var tcallback = ( only_return, force_repeat ) => {
+				if ( timeout )
+					clearTimeout( timeout );
 
-			if ( text )
-				speech( text, false, user, flags, extra, limit( 'message', lmessage, user ) );
+				if ( typeof( rcallbacks[ user ] ) !== 'undefined' )
+				{
+					var text = callback( ...rcallbacks[ user ].args, true, only_return, force_repeat );
+					if ( !only_return )
+						delete rcallbacks[ user ];
+
+					return ( text );
+				}
+			};
+
+			timeout = setTimeout( tcallback, 1000 );
+			rcallbacks[ user ] = { callback: tcallback, args };
 		}
+		else
+			callback( ...args, false );
 	}
 
 	ComfyJS.onMessageDeleted = ( id, extra ) => { // Responds to chat message deleted
@@ -2619,25 +2668,29 @@ window.addEventListener( 'load', () => {
 		if ( localStorage.getItem( 'debug' ) )
 			console.log( 'onReward:', user, reward, cost, extra );
 
-		if ( extra.rewardFulfilled )
+		if ( typeof( extra ) === 'object' && extra.rewardFulfilled )
 			return ;
 
+		var reward_callback = ( ( typeof( rcallbacks[ user ] ) !== 'undefined' ) ? rcallbacks[ user ].callback : () => {} );
 		var [ template, flags, chat_enabled, split_msg, speech_enabled, speech_msg ] = convert( 'reward', user, reward, null, extra );
+
+		var luser = replace( user );
+		var text = reward_callback( true );
+		text = template
+			.replace( /\$username\$/g, limit( 'username', luser, user ) )
+			.replace( /\$reward\$/g, reward )
+			.replace( /\$cost\$/g, cost ) + ( text ? ( ' : ' + text ) : '' );
+
+		if ( speech_enabled && speech_msg )
+			speech( text, false, user, null );
 
 		if ( chat_enabled )
 			chat( prechat( language[ 2 ].chat.reward
 				.replace( /\$username\$/g, user )
 				.replace( /\$reward\$/g, reward )
-				.replace( /\$cost\$/g, cost ), split_msg, ' : ' ), undefined, { highlighted: true } );
+				.replace( /\$cost\$/g, cost ), split_msg, ' : ' ), undefined, { highlighted: true }, undefined, undefined, text );
 
-		if ( speech_enabled && speech_msg )
-		{
-			var luser = replace( user );
-			speech( template
-				.replace( /\$username\$/g, limit( 'username', luser, user ) )
-				.replace( /\$reward\$/g, reward )
-				.replace( /\$cost\$/g, cost ), false, user, null );
-		}
+		reward_callback( false, text );
 	};
 
 	ComfyJS.onJoin = ( user, self, extra ) => { // Responds to user joining the chat
@@ -2677,7 +2730,7 @@ window.addEventListener( 'load', () => {
 		{
 			var luser = replace( user );
 			speech( template
-				.replace( /\$username\$/g, luser )
+				.replace( /\$username\$/g, limit( 'username', luser, user ) )
 				.replace( /\$viewers\$/g, viewers ) );
 		}
 	};

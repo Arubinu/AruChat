@@ -634,6 +634,9 @@ img.navbar-brand {
 #chat.timestamp > ul > li .time {
 	display: initial;
 }
+#chat.timestamp > ul > li.notime .time {
+	opacity: 0;
+}
 
 #panel {
 	overflow: hidden;

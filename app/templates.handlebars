@@ -64,7 +64,7 @@
 </template>
 
 <template id="message">
-	<li timestamp="{{ data.timestamp }}" class="{{ data.class }}">
+	<li timestamp="{{ data.timestamp }}" class="{{ data.class }}" repeat="{{ data.repeat }}">
 		<span class="time">{{ data.time }}</span>
 		{{# if ( and data.message ( and data.flags data.extra ) ) }}
 		<img src="{{ data.channel.image }}" class="logo" title="{{ data.channel.name }}" />
@@ -85,6 +85,7 @@
 <template id="user_options">
 	<div class="user-options">
 		:
+		<i class="chat fas fa-redo-alt"></i>
 		<i class="chat fas fa-check"></i>
 		<i class="chat fas fa-ban"></i>
 		<i class="chat fas fa-trash-alt" style="display: {{ or ( and data.user 'initial' ) 'none' }}"></i>

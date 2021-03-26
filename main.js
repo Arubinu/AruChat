@@ -132,6 +132,7 @@ function createWindow()
 
 	// Enable Clipboard
 	win.webContents.on( 'did-finish-load', () => {
+		var is_darwin = ( process.platform === 'darwin' );
 		win.webContents.executeJavaScript( `
 			window.addEventListener( 'keydown', function( event ) {
 				var CmdOrCtrl = ( event.ctrlKey || event.metaKey && event.ctrlKey != event.metaKey );
@@ -139,7 +140,7 @@ function createWindow()
 					document.execCommand( 'cut' );
 				else if ( event.keyCode === 67 && CmdOrCtrl )
 					document.execCommand( 'copy' );
-				else if ( event.keyCode === 86 && CmdOrCtrl )
+				else if ( ${is_darwin} && event.keyCode === 86 && CmdOrCtrl )
 					document.execCommand( 'paste' );
 				else if ( event.keyCode === 65 && CmdOrCtrl )
 					document.execCommand( 'selectAll' );

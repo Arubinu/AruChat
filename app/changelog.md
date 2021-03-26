@@ -62,3 +62,10 @@ v0.0.58:
  - Changed word replacement to avoid changes inside words
  - Reduces minimum application size (app)
  - Allows disabling hardware acceleration (app)
+
+v0.0.59:
+ - Fix username limitation when onJoin
+ - Ignore rewards starting with 'Sound Alert: '
+ - Fix the rewards and combine the message if possible
+ - Adds the possibility of repeating a sentence, without limit
+ - Fix duplicate when pasting text (app)
