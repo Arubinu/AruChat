@@ -76,9 +76,9 @@
 				{{/ if }}
 			{{/ each }}
 			<a href="https://www.twitch.tv/{{ lower data.user }}" target="_blank" class="username" style="color: {{ data.color }};" title="{{ data.user }}">{{ data.user }}</a>
-			:
+			{{# if ( not-in 'action' data.class ) }}:{{/ if }}
 		{{/ if }}
-		<span class="message{{ or ( and data.special ' special' ) '' }}">{{{ data.message }}}</span>
+		<span class="message{{ or ( and data.special ' special' ) '' }}" style="{{ or ( and ( in 'action' data.class ) ( concat 'color: ' data.color ';' ) ) '' }}">{{{ data.message }}}</span>
 	</li>
 </template>
 
@@ -162,7 +162,7 @@
 			<tr>
 				<th scope="col">Mot cherché</th>
 				<th scope="col">Mot remplacé</th>
-				<th scope="col" style="width: 102px;"></th>
+				<th scope="col" style="width: 130px;"></th>
 			</tr>
 		</thead>
 		<tbody>
@@ -171,8 +171,9 @@
 				<th scope="row">{{ word }}</th>
 				<td><input type="text" value="{{ replacement }}" placeholder="{{ ../modals.words.placeholder }}" class="input-transparent" /></td>
 				<td class="text-center" style="user-select: none;">
-					<i class="fas fa-user{{ or ( and ( or ( eq mode 1 ) ( eq mode 3 ) ) ' enabled' ) '' }}" title="{{ ../modals.words.user }}"></i>
-					<i class="fas fa-comment-dots{{ or ( and ( or ( eq mode 2 ) ( eq mode 3 ) ) ' enabled' ) '' }}" title="{{ ../modals.words.message }}"></i>
+					<i class="fas fa-user{{ or ( and ( eq '1' ( array-get 0 mode ) ) ' enabled' ) '' }}" title="{{ ../modals.words.user }}"></i>
+					<i class="fas fa-comment-dots{{ or ( and ( eq '1' ( array-get 1 mode ) ) ' enabled' ) '' }}" title="{{ ../modals.words.message }}"></i>
+					<i class="fas fa-shapes{{ or ( and ( eq '1' ( array-get 2 mode ) ) ' enabled' ) '' }}" title="{{ ../modals.words.inside }}"></i>
 					<i class="fas fa-trash-alt"></i>
 				</td>
 			</tr>

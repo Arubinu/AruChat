@@ -150,6 +150,17 @@ window.addEventListener( 'load', () => {
 			}
 		} catch ( e ) {}
 
+		// obsolete
+		try
+		{
+			Object.keys( users ).forEach( ( key ) => {
+				Object.keys( users[ key ].words ).forEach( ( skey ) => {
+					if ( users[ key ].words[ skey ].length == 2 )
+						users[ key ].words[ skey ].push( false );
+				} );
+			} );
+		} catch ( e ) {}
+
 		try
 		{
 			var keys = Object.keys( originals );
@@ -171,6 +182,15 @@ window.addEventListener( 'load', () => {
 				tmp = { 'Arubinu42': [ 3, 'Arubinu' ] };
 			if ( typeof( tmp ) === 'object' )
 				words = tmp;
+		} catch ( e ) {}
+
+		// obsolete
+		try
+		{
+			Object.keys( words ).forEach( ( key ) => {
+				if ( words[ key ].length == 2 )
+					words[ key ].push( false );
+			} );
 		} catch ( e ) {}
 
 		channels.forEach( ( channel_name ) => { channel_add( channel_name ); } );
@@ -2031,7 +2051,10 @@ window.addEventListener( 'load', () => {
 			var data = { data: [] };
 			Object.keys( obj ).forEach( ( word ) => {
 				var value = obj[ word ];
-				data.data.push( { error: false, word: word, replacement: value[ 1 ], mode: value[ 0 ] } );
+				var mode = ( value[ 0 ] >>> 0 ).toString( 2 ).padStart( 3, '0' );
+				mode = mode.split( '' ).reverse().join( '' );
+
+				data.data.push( { error: false, word: word, replacement: value[ 1 ], mode: mode } );
 			} );
 
 			return ( Object.assign( data, language[ 2 ] ) );
@@ -2042,11 +2065,17 @@ window.addEventListener( 'load', () => {
 				var mode = () => {
 					var user = elem.querySelector( '.fa-user' ).classList.contains( 'enabled' );
 					var message = elem.querySelector( '.fa-comment-dots' ).classList.contains( 'enabled' );
+					var inside = elem.querySelector( '.fa-shapes' ).classList.contains( 'enabled' );
 
-					return ( ( user && message ) ? 3 : ( message ? 2 : ( user ? 1 : 0 ) ) );
+					var tmp = '';
+					[ user, message, inside ].reverse().forEach( ( item ) => {
+						tmp += ( item ? '1' : '0' );
+					} );
+
+					return ( parseInt( tmp, 2 ) );
 				};
 
-				elem.querySelectorAll( '.fa-user, .fa-comment-dots' ).forEach( ( selem ) => {
+				elem.querySelectorAll( '.fa-user, .fa-comment-dots, .fa-shapes' ).forEach( ( selem ) => {
 					selem.addEventListener( 'click', function() {
 						this.classList.toggle( 'enabled' );
 						obj[ key ][ 0 ] = mode();
@@ -2138,14 +2167,15 @@ window.addEventListener( 'load', () => {
 	 * @param	{Object}			[flags]				User-related flags
 	 * @param	{Object}			[extra]				Other information about the user and the process
 	 * @param	{bool}				[special]			If the message is not from a user
-	 * @param	{string}			[repeat]			Store the phrase to repeat
+	 * @param	{string}			[respeech]			Store the phrase to repeat
 	 * @return	{HTMLElement}							Item to add to a list
 	 */
-	function chat( user, message, flags, extra, special, repeat )
+	function chat( user, message, flags, extra, special, respeech )
 	{
 		var dclass = [];
 		var timestamp = new Date( parseInt( extra ? extra.timestamp : Date.now() ) );
 
+		var action = ( extra && typeof( extra.messageType ) === 'string' && extra.messageType == 'action' );
 		if ( flags && typeof( flags.notime ) === 'boolean' && flags.notime )
 			dclass.push( 'notime' );
 		if ( flags && typeof( flags.highlighted ) === 'boolean' && flags.highlighted )
@@ -2154,6 +2184,8 @@ window.addEventListener( 'load', () => {
 			dclass.push( 'connected' );
 		if ( flags && typeof( flags.disconnected ) === 'boolean' && flags.disconnected )
 			dclass.push( 'disconnected' );
+		if ( action )
+			dclass.push( 'action' );
 
 		if ( message && flags && extra )
 		{
@@ -2191,7 +2223,7 @@ window.addEventListener( 'load', () => {
 			color:		( extra ? colors[ extra.userId ] : 'initial' ),
 			accept:		[ 'broadcaster', 'mod', 'founder', 'vip', 'subscriber', 'premium', 'partner' ],
 			message:	dmessage.innerHTML,
-			repeat:		btoa( repeat ),
+			repeat:		btoa( respeech ),
 			special:	special,
 			timestamp:	timestamp.getTime()
 		};
@@ -2422,6 +2454,19 @@ window.addEventListener( 'load', () => {
 	 */
 	function replace( user, message )
 	{
+		var step = function( text, word, replace, spaces ) {
+			var pos = position( text, word, true ).reverse();
+			pos.forEach( ( index ) => {
+				var before = ( [ '@', '#' ].indexOf( text[ index[ 0 ] - 1 ] ) >= 0 );
+				var start = ( !index[ 0 ] || text[ index[ 0 ] - 1 ] == ' ' || ( index[ 0 ] == 1 && before ) || ( index[ 0 ] >= 2 && before && text[ index[ 0 ] - 2 ] == ' ' ) );
+				var end = ( index[ 1 ] == text.length || text[ index[ 1 ] ] == ' ' );
+				if ( !spaces || ( start && end ) )
+					text = ( text.substr( 0, index[ 0 ] ) + replace + text.substr( index[ 1 ] ) );
+			} );
+
+			return ( text );
+		};
+
 		var uuser = ( typeof( user ) !== 'undefined' );
 		var umessage = ( typeof( message ) !== 'undefined' );
 
@@ -2433,26 +2478,14 @@ window.addEventListener( 'load', () => {
 		var twords = ( ( !uwords && words ) || ( uwords && tuser.words ) );
 		Object.keys( twords ).forEach( ( word ) => {
 			var [ mode, replacement ] = twords[ word ];
-			if ( ( mode == 1 || mode == 3 ) && uuser )
-			{
-				position( user, word, true ).forEach( ( index ) => {
-					var before = ( [ '@', '#' ].indexOf( user[ index[ 0 ] - 1 ] ) >= 0 );
-					var start = ( !index[ 0 ] || user[ index[ 0 ] - 1 ] == ' ' || ( index[ 0 ] == 1 && before ) || ( index[ 0 ] >= 2 && before && user[ index[ 0 ] - 2 ] == ' ' ) );
-					var end = ( index[ 1 ] == user.length || user[ index[ 1 ] ] == ' ' );
-					if ( start && end )
-						user = ( user.substr( 0, index[ 0 ] ) + replacement + user.substr( index[ 1 ] ) );
-				} );
-			}
-			if ( ( mode == 2 || mode == 3 ) && umessage )
-			{
-				position( message, word, true ).forEach( ( index ) => {
-					var before = ( [ '@', '#' ].indexOf( message[ index[ 0 ] - 1 ] ) >= 0 );
-					var start = ( !index[ 0 ] || message[ index[ 0 ] - 1 ] == ' ' || ( index[ 0 ] == 1 && before ) || ( index[ 0 ] >= 2 && before && message[ index[ 0 ] - 2 ] == ' ' ) );
-					var end = ( index[ 1 ] == message.length || message[ index[ 1 ] ] == ' ' );
-					if ( start && end )
-						message = ( message.substr( 0, index[ 0 ] ) + replacement + message.substr( index[ 1 ] ) );
-				} );
-			}
+			mode = ( mode >>> 0 ).toString( 2 ).padStart( 3, '0' );
+			mode = mode.split( '' ).reverse().join( '' );
+
+			var inside = !( mode[ 2 ] == '1' );
+			if ( mode[ 0 ] == '1' && uuser )
+				user = step( user, word, replacement, false );
+			if ( mode[ 1 ] == '1' && umessage )
+				message = step( message, word, replacement, inside );
 		} );
 
 		return ( ( uuser && umessage ) ? [ user, message ] : ( umessage ? message : user ) );
@@ -2610,8 +2643,12 @@ window.addEventListener( 'load', () => {
 			flags.notime = reward;
 			flags.highlighted = ( flags.highlighted || reward );
 
+			var action = ( extra && typeof( extra.messageType ) === 'string' && extra.messageType == 'action' );
+			if ( action )
+				template = '$username$ $message$';
+
 			var ret = '';
-			var repeat = '';
+			var respeech = '';
 			if ( speech_enabled && speech_msg )
 			{
 				var [ luser, lmessage ] = replace( user, speech_msg );
@@ -2621,14 +2658,16 @@ window.addEventListener( 'load', () => {
 					.replace( /\$message\$/g, tmessage );
 
 				if ( text && !reward && !only_return )
-					speech( text, false, user, flags, extra, tmessage );
+					speech( text, false, user, flags, extra, ( action ? text : tmessage ) );
 
 				ret = tmessage;
-				repeat = lmessage;
+				respeech = template
+					.replace( /\$username\$/g, user )
+					.replace( /\$message\$/g, lmessage );
 			}
 
 			if ( chat_enabled && !only_return )
-				chat( user, split_msg, flags, extra, undefined, ( force_repeat || repeat ) );
+				chat( user, split_msg, flags, extra, undefined, ( force_repeat || respeech ) );
 
 			return ( ret );
 		};

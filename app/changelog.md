@@ -69,3 +69,8 @@ v0.0.59:
  - Fix the rewards and combine the message if possible
  - Adds the possibility of repeating a sentence, without limit
  - Fix duplicate when pasting text (app)
+
+v0.0.60:
+ - Manage the '/me' action
+ - Fix repetition and match '/me'
+ - Fix replacements in a sentence
