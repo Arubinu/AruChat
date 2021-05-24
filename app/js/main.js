@@ -1145,7 +1145,13 @@ window.addEventListener( 'load', () => {
 						} );
 				} );
 			} );
-			ivolume.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { ivolume.value = 0; ivolume.dispatchEvent( html_change ); } );
+			ivolume.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => {
+				if ( window.speechSynthesis.speaking )
+					window.speechSynthesis.cancel();
+
+				ivolume.value = 0;
+				ivolume.dispatchEvent( html_change );
+			} );
 			iflooding.parentNode.querySelector( ':scope > .fas' ).addEventListener( 'click', () => { iflooding.value = 0; iflooding.dispatchEvent( html_change ); } );
 
 			title_set();
@@ -1155,7 +1161,7 @@ window.addEventListener( 'load', () => {
 			load();
 			setInterval( save, 1000 );
 			setInterval( () => {
-				if ( inchat || !line.length )
+				if ( inchat || window.speechSynthesis.speaking || !line.length )
 					return ;
 
 				var [ text, user, flags, extra, message ] = line.shift();

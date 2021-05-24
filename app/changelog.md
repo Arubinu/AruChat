@@ -74,3 +74,6 @@ v0.0.60:
  - Manage the '/me' action
  - Fix repetition and match '/me'
  - Fix replacements in a sentence
+
+v0.0.61:
+ - Stop the current diction with the mute button
